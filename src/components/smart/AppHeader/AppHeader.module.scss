@@ -1,0 +1,31 @@
+.site {
+  display: flex;
+  flex-direction: column;
+  height: inherit;
+}
+
+.journalName {
+  font-size: 14px;
+}
+
+.siteName {
+  font-size: 18px;
+  font-family: "Trebuchet MS", "Tahoma", sans-serif;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin: 10px 0;
+}
+
+.authorization {
+  width: 150px;
+  overflow-wrap: break-word;
+}
+
+.login {
+  text-decoration: underline;
+
+  &:hover {
+    cursor: pointer;
+    color: darkcyan;
+  }
+}

@@ -1,0 +1,13 @@
+.login {
+  width: 400px;
+
+  @media (max-width: 320px) {
+    width: 315px;
+  }
+}
+
+.loginHeader {
+  font-size: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}

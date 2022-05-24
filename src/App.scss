@@ -1,0 +1,62 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Tahoma", sans-serif;
+  font-size: 12px;
+  color: #444;
+  overflow-y: scroll;
+}
+
+.layout {
+  align-items: center;
+  background: #fff url("./assets/images/bg_header.png") repeat-x;
+}
+
+.header {
+  height: 200px;
+  background: inherit;
+  line-height: normal;
+  display: flex;
+}
+
+.content {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.login-container {
+  min-width: 500px;
+  border: 2px solid black;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+// .editable-row:hover .editable-cell-value-wrap {
+//   padding: 0px 11px;
+//   border: 1px solid #d9d9d9;
+//   border-radius: 2px;
+// }
+
+.editable-row {
+  word-break: break-all;
+}
+
+.editable-cell-value-wrap, .editable-header-cell-value-wrap  {
+  height: 24px;
+  padding: 1px 8px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.editable-row:hover .editable-header-cell-value-wrap {
+  padding: 0px 7px;
+  border: 1px solid #d9d9d9;
+  border-radius: 2px;
+  background-color: white;
+}
