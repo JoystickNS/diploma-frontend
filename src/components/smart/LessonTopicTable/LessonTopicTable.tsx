@@ -256,11 +256,7 @@ const LessonTopicTable: FC<LessonTopicTableProps> = ({
           size="small"
           footer={() => (
             <Row justify="center">
-              <AddItemButton
-                tooltipText="Добавить тему"
-                onClick={handleAdd}
-                disabled={editingKey !== -1}
-              />
+              <AddItemButton onClick={handleAdd} disabled={editingKey !== -1} />
             </Row>
           )}
           {...props}

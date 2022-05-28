@@ -3,7 +3,7 @@ import { Dispatch, SetStateAction } from "react";
 import { ILessonTopic } from "../../../models/ILessonTopic";
 import { IAttestationTable } from "../../../pages/Journals/Journal/CreateJournal/CreateJournalForm/CreateJournalForm.interface";
 
-export interface ILessonTopicTable extends Omit<ILessonTopic, "id"> {
+export interface ILessonTopicTable extends Pick<ILessonTopic, "name"> {
   key: number;
   isEditable?: boolean;
 }

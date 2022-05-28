@@ -1,7 +1,6 @@
 import {
   AutoComplete,
   Button,
-  Checkbox,
   Col,
   DatePicker,
   Form,
@@ -9,6 +8,7 @@ import {
   Input,
   message,
   Modal,
+  Popover,
   Row,
   Select,
   Space,
@@ -17,14 +17,18 @@ import {
   Tag,
 } from "antd";
 import moment from "moment";
-import { createContext, FC, useContext, useState } from "react";
+import { createContext, FC, useContext, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import AddItemButton from "../../../components/simple/AddItemButton/AddItemButton";
 import DeleteButton from "../../../components/smart/DeleteButton/DeleteButton";
 import { useGetJournalFullInfoQuery } from "../../../services/journals/journals.service";
 import AddLessonDaysForm from "../../../components/smart/AddLessonDaysForm/AddLessonDaysForm";
 import { useUpdateOneLessonMutation } from "../../../services/lessons/lessons.service";
-import { EditableJournalHeaderCellProps } from "./Journal.interface";
+import {
+  EditableJournalHeaderCellProps,
+  StudentPoint,
+  StudentVisit,
+} from "./Journal.interface";
 import EditButton from "../../../components/smart/EditButton/EditButton";
 import FormItem from "antd/lib/form/FormItem";
 import { useGetWorkTypesQuery } from "../../../services/work-types/work-types.service";
@@ -34,6 +38,10 @@ import { IAttestation } from "../../../models/IAttestation";
 import { useUpdateAttestationMutation } from "../../../services/attestations/attestations.service";
 import { ILesson } from "../../../models/ILesson";
 import EditSubgroups from "../../../components/smart/EditSubgroups/EditSubgroups";
+import { useDispatch } from "react-redux";
+import { setJournal } from "../../../store/slices/journal/journal.slice";
+import { useAppSelector } from "../../../hooks/redux";
+import { LABORATORY, LECTURE, PRACTICE } from "../../../constants/lessons";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -54,8 +62,14 @@ const EditableRow: FC = ({ ...props }) => {
 const Journal: FC = () => {
   const { journalId } = useParams();
 
-  const { data: journalFullInfoData, isLoading: isJournalFullInfoLoading } =
-    useGetJournalFullInfoQuery(journalId ? +journalId : 0);
+  const dispatch = useDispatch();
+  const journal = useAppSelector((state) => state.journal);
+
+  const {
+    data: journalFullInfoData,
+    isLoading: isJournalFullInfoLoading,
+    isSuccess: isJournalFullInfoSuccess,
+  } = useGetJournalFullInfoQuery(journalId ? +journalId : 0);
   const { data: workTypesData } = useGetWorkTypesQuery();
 
   const [updateOneLessonAPI, { isLoading: isUpdateOneLessonLoading }] =
@@ -71,9 +85,86 @@ const Journal: FC = () => {
     useState<boolean>(false);
   const [isEditSubgroupsModalVisible, setIsEditSubgroupsModalVisible] =
     useState<boolean>(false);
+  const [dataSource, setDataSource] = useState<any>([]);
 
   const [attestationEditForm] = useForm();
   const [lessonForm] = useForm();
+
+  interface a {
+    dataIndex: string;
+    record: any;
+  }
+
+  const EditableCell: React.FC<a> = ({
+    children,
+    dataIndex,
+    record,
+    ...restProps
+  }) => {
+    let childNode = children;
+
+    if (dataIndex?.includes("isAbsent")) {
+      const isAbsent = record[dataIndex];
+      if (isAbsent?.isAbsent === false) {
+        childNode = "н";
+      }
+    }
+
+    return <td {...restProps}>{childNode}</td>;
+  };
+
+  useEffect(() => {
+    if (isJournalFullInfoSuccess) {
+      setDataSource(
+        journalFullInfoData.students.map((student) => {
+          const temp = {} as any;
+
+          temp.key = student.id;
+          temp.studentName = `${student.lastName} ${student.firstName} ${student.middleName}`;
+
+          const studentVisits: StudentVisit[] = [];
+          const studentPoints: StudentPoint[] = [];
+
+          journalFullInfoData.lessons.forEach((lesson) => {
+            const studentVisit = lesson.visits.find(
+              (visit) => visit.studentId === student.id
+            );
+
+            const studentPoint = lesson.points.find(
+              (point) => point.studentId === student.id
+            );
+
+            if (studentVisit) {
+              studentVisits.push({
+                ...studentVisit,
+                lessonId: lesson.id,
+              });
+            }
+
+            if (studentPoint) {
+              studentPoints.push({
+                ...studentPoint,
+                lessonId: lesson.id,
+              });
+            }
+          });
+
+          studentVisits.forEach(
+            (studentVisit) =>
+              (temp[`${studentVisit.lessonId} isAbsent`] = studentVisit)
+          );
+
+          studentPoints.forEach(
+            (studentPoint) =>
+              (temp[`${studentPoint.lessonId} isAbsent`] = studentPoint)
+          );
+
+          return temp;
+        })
+      );
+      dispatch(setJournal(journalFullInfoData));
+    }
+  }, [isJournalFullInfoLoading]);
 
   const handleDeleteLesson = (lessonId: number) => {
     updateOneLessonAPI({ id: lessonId, date: undefined });
@@ -118,6 +209,7 @@ const Journal: FC = () => {
     isEditable,
     children,
     dataIndex,
+    lessonType,
     ...restProps
   }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -146,6 +238,34 @@ const Journal: FC = () => {
       } catch (errInfo) {}
     };
 
+    const options: any[] = [];
+
+    switch (lessonType) {
+      case LECTURE:
+        journalFullInfoData?.lectureTopics.forEach((topic) => {
+          if (!options.find((option) => option.value === topic.name)) {
+            options.push({ value: topic.name });
+          }
+        });
+        break;
+
+      case PRACTICE:
+        journalFullInfoData?.practiceTopics.forEach((topic) => {
+          if (!options.find((option) => option.value === topic.name)) {
+            options.push({ value: topic.name });
+          }
+        });
+        break;
+
+      case LABORATORY:
+        journalFullInfoData?.laboratoryTopics.forEach((topic) => {
+          if (!options.find((option) => option.value === topic.name)) {
+            options.push({ value: topic.name });
+          }
+        });
+        break;
+    }
+
     let childNode = children;
     let inputNode = (
       <AutoComplete
@@ -155,6 +275,10 @@ const Journal: FC = () => {
         placeholder="Введите тему занятия"
         onBlur={save}
         maxTagTextLength={250}
+        options={options}
+        filterOption={(inputValue, option) =>
+          option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+        }
       />
     );
 
@@ -164,41 +288,16 @@ const Journal: FC = () => {
           {inputNode}
         </Form.Item>
       ) : (
-        <div className="editable-header-cell-value-wrap" onClick={toggleEdit}>
-          {children}
-        </div>
+        <Popover content={title}>
+          <div className="editable-header-cell-value-wrap" onClick={toggleEdit}>
+            {children}
+          </div>
+        </Popover>
       );
     }
 
     return <th {...restProps}>{childNode}</th>;
   };
-
-  const dataSource = [
-    {
-      key: "1",
-      studentName: "Олег",
-      age: 32,
-      address: "10 Downing Street",
-    },
-    {
-      key: "2",
-      studentName: "Сергей",
-      age: 42,
-      address: "10 Downing Street",
-    },
-    {
-      key: "3",
-      studentName: "Павел",
-      age: 42,
-      address: "10 Downing Street",
-    },
-    {
-      key: "4",
-      studentName: "Андрей",
-      age: 42,
-      address: "10 Downing Street",
-    },
-  ];
 
   const columns: any[] = [];
 
@@ -229,25 +328,20 @@ const Journal: FC = () => {
   });
 
   if (journalFullInfoData?.lessons && journalFullInfoData.lessons.length > 0) {
-    const lessonsWithDates = journalFullInfoData.lessons.filter(
-      (lesson) => lesson.date !== null
-    );
-
-    if (lessonsWithDates.length > 0) {
+    if (journal.lessons.length > 0) {
       columns.push({
         title: "Занятия",
-        dataIndex: "lessons",
         align: "center",
         children: [
-          ...lessonsWithDates.map((lesson) => ({
+          ...journal.lessons.map((lesson) => ({
             title: () => {
               const date = moment(lesson.date);
               const dayName = date.format("ddd");
               const today = moment();
               const lessonType =
-                lesson.type === "Лекция"
+                lesson.topic.type.name === LECTURE
                   ? "Лек."
-                  : lesson.type === "Практика"
+                  : lesson.topic.type.name === PRACTICE
                   ? "Пр."
                   : "Лаб.";
               return (
@@ -288,10 +382,9 @@ const Journal: FC = () => {
                 </Row>
               );
             },
-            dataIndex: lesson.date,
             children: [
               {
-                title: lesson.topic,
+                title: lesson.topic.name,
                 align: "center",
                 isEditable: true,
                 className: "editable-row",
@@ -301,14 +394,19 @@ const Journal: FC = () => {
                   title: col.title,
                   isEditable: col.isEditable,
                   dataIndex: col.dataIndex,
+                  lessonType: lesson.topic.type,
                 }),
                 children: [
                   {
                     title: "Отсутствует",
-                    dataIndex: "isAbsent",
+                    dataIndex: `${lesson.id} isAbsent`,
                     align: "center",
                     width: "270px",
-                    render: () => <Checkbox />,
+                    render: (text: string, record: any) => {
+                      if (record[`${lesson.id} isAbsent`]?.isAbsent === true) {
+                        return "Н";
+                      }
+                    },
                   },
                 ],
               },
@@ -322,50 +420,53 @@ const Journal: FC = () => {
   if (journalFullInfoData && journalFullInfoData?.attestations.length > 0) {
     columns.push({
       title: "Промежуточные аттестации",
-      dataIndex: "attestations",
       align: "center",
       children: [
-        ...journalFullInfoData.attestations.map((attestation) => ({
-          title: () => {
-            const title = attestation.maximumPoints
-              ? `${attestation.workType} (макс. ${attestation.maximumPoints})`
-              : attestation.workType;
-            return (
-              <Space>
-                {title}
-                <EditButton
-                  onClick={() => handleEditAttestation(attestation)}
-                />
-              </Space>
-            );
-          },
-          align: "center",
-          children: attestation.workTopic
-            ? [
-                {
-                  title: attestation.workTopic,
-                  align: "center",
-                  width: "400px",
-                  dataIndex: "workTopic",
-                },
-              ]
-            : null,
-        })),
+        ...journalFullInfoData.attestations
+          .filter((attestation) => attestation.workType)
+          .map((attestation) => {
+            return {
+              title: () => {
+                const title = attestation.maximumPoints
+                  ? `${attestation.workType?.name} (макс. ${attestation.maximumPoints})`
+                  : attestation.workType?.name;
+                return (
+                  <Space>
+                    {title}
+                    <EditButton
+                      onClick={() => handleEditAttestation(attestation)}
+                    />
+                  </Space>
+                );
+              },
+              align: "center",
+              children: attestation.workTopic
+                ? [
+                    {
+                      title: attestation.workTopic,
+                      align: "center",
+                      width: "400px",
+                    },
+                  ]
+                : null,
+            };
+          }),
       ],
     });
   }
 
   columns.push({
-    title: journalFullInfoData?.maximumPoints
-      ? `Суммарный балл (макс. ${journalFullInfoData?.maximumPoints})`
+    title: journal.maximumPoints
+      ? `Суммарный балл (макс. ${journal.maximumPoints})`
       : "Суммарный балл",
     align: "center",
+    dataIndex: "sumPoints",
     sorter: (a: any, b: any) => (a.studentName > b.studentName ? 1 : -1),
     width: "150px",
   });
 
   columns.push({
-    title: journalFullInfoData?.control,
+    title: journal.control.name,
     align: "center",
     sorter: (a: any, b: any) => (a.control > b.control ? 1 : -1),
     width: "150px",
@@ -380,7 +481,7 @@ const Journal: FC = () => {
             {isJournalFullInfoLoading ? (
               <Spin size="small" />
             ) : (
-              journalFullInfoData?.discipline
+              journal.discipline.name
             )}
           </h2>
           <h2>
@@ -388,7 +489,7 @@ const Journal: FC = () => {
             {isJournalFullInfoLoading ? (
               <Spin size="small" />
             ) : (
-              journalFullInfoData?.group
+              journal.group.name
             )}
           </h2>
           <h2>
@@ -396,7 +497,7 @@ const Journal: FC = () => {
             {isJournalFullInfoLoading ? (
               <Spin size="small" />
             ) : (
-              journalFullInfoData?.semester
+              journal.semester
             )}
           </h2>
         </Col>
@@ -416,6 +517,7 @@ const Journal: FC = () => {
             <Modal
               title="Добавить занятия"
               centered
+              destroyOnClose
               visible={isAddLessonsModalVisible}
               maskClosable={false}
               footer={null}
@@ -423,23 +525,14 @@ const Journal: FC = () => {
               onCancel={() => setIsAddLessonsModalVisible(false)}
             >
               <AddLessonDaysForm
-                lessons={journalFullInfoData?.lessons || []}
+                lessons={journal.lessons}
                 setIsModalVisible={setIsAddLessonsModalVisible}
-                lecturesCount={
-                  (journalFullInfoData &&
-                    Math.ceil(journalFullInfoData?.lectureHours / 2)) ||
-                  0
+                maxLecturesCount={Math.ceil(journal.lectureHours / 2) || 0}
+                maxPracticesCount={Math.ceil(journal.practiceHours / 2) || 0}
+                maxLaboratoriesCount={
+                  Math.ceil(journal.laboratoryHours / 2) || 0
                 }
-                practicesCount={
-                  (journalFullInfoData &&
-                    Math.ceil(journalFullInfoData?.practiceHours / 2)) ||
-                  0
-                }
-                laboratoriesCount={
-                  (journalFullInfoData &&
-                    Math.ceil(journalFullInfoData?.laboratoryHours / 2)) ||
-                  0
-                }
+                subgroups={journal.subgroups}
               />
             </Modal>
           </>
@@ -456,7 +549,6 @@ const Journal: FC = () => {
             row: EditableRow,
           },
         }}
-        rowClassName={() => "editable-row"}
         columns={columns}
         scroll={{ x: "max-context", y: window.screen.availHeight - 600 }}
         pagination={false}
@@ -467,13 +559,19 @@ const Journal: FC = () => {
       <Modal
         centered
         title="Редактирование подгрупп"
+        onOk={() => setIsEditSubgroupsModalVisible(false)}
         onCancel={() => setIsEditSubgroupsModalVisible(false)}
         maskClosable={false}
         visible={isEditSubgroupsModalVisible}
-        cancelText={null}
+        cancelButtonProps={{ style: { display: "none" } }}
         okText="Закрыть"
       >
-        <EditSubgroups />
+        <EditSubgroups
+          group={journal.group.name}
+          journalId={journal.id}
+          students={journal.students}
+          subgroups={journal.subgroups}
+        />
       </Modal>
 
       <Modal

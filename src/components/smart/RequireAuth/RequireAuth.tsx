@@ -11,6 +11,7 @@ const RequireAuth: FC<IRequireAuthProps> = ({ requiredPermission }) => {
   const auth = useAppSelector((state) => state.auth);
   const location = useLocation();
   let hasPermission;
+
   if (!requiredPermission) {
     hasPermission = true;
   } else {

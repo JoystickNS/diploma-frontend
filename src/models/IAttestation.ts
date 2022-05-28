@@ -1,6 +1,8 @@
+import { IDictionary } from "./IDictionary";
+
 export interface IAttestation {
   id: number;
-  workType?: string;
+  workType?: IDictionary;
   workTopic?: string;
   maximumPoints?: number;
 }

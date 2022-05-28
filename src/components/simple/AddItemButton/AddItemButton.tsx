@@ -9,24 +9,23 @@ const AddItemButton: FC<AddItemButtonProps> = ({
   disabled,
   ...props
 }) => {
-  return (
-    <Popover content={tooltipText}>
-      <Button
-        type="link"
-        style={{ padding: 0 }}
-        size="small"
-        disabled={disabled}
+  const button = (
+    <Button type="link" style={{ padding: 0 }} size="small" disabled={disabled}>
+      <Tag
+        color={disabled ? "gray" : "green"}
+        className={s.addItem}
+        style={{ margin: 0 }}
+        {...props}
       >
-        <Tag
-          color={disabled ? "gray" : "green"}
-          className={s.addItem}
-          style={{ margin: 0 }}
-          {...props}
-        >
-          <PlusOutlined />
-        </Tag>
-      </Button>
-    </Popover>
+        <PlusOutlined />
+      </Tag>
+    </Button>
+  );
+
+  return tooltipText ? (
+    <Popover content={tooltipText}>{button}</Popover>
+  ) : (
+    { ...button }
   );
 };
 

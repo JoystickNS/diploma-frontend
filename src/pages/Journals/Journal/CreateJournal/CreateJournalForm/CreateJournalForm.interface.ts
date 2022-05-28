@@ -1,6 +1,8 @@
+import { IDictionary } from "../../../../../models/IDictionary";
+
 export interface IAttestationTable {
   key: number;
-  workType?: string;
+  workType?: IDictionary;
   workTopic?: string;
   maximumPoints?: number;
 }

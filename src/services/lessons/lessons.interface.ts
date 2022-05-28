@@ -11,5 +11,5 @@ export interface IUpdateLessonArgs {
 }
 
 export interface IUpdateManyLessonsArgs {
-  lessons: IUpdateLessonArgs[];
+  items: IUpdateLessonArgs[];
 }

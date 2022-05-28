@@ -53,10 +53,8 @@ const CreateJournalForm: FC = () => {
   const { data: workTypesData, isLoading: isWorkTypesLoading } =
     useGetWorkTypesQuery();
 
-  const [
-    createJournalAPI,
-    { isLoading: isCreateJournalLoading, isSuccess: isCreateJournalSuccess },
-  ] = useCreateJournalMutation();
+  const [createJournalAPI, { isLoading: isCreateJournalLoading }] =
+    useCreateJournalMutation();
 
   const [attestationsData, setAttestationsData] = useState<IAttestationTable[]>(
     []
@@ -85,19 +83,16 @@ const CreateJournalForm: FC = () => {
     });
   }, []);
 
-  useEffect(() => {
-    if (isCreateJournalSuccess) {
-      navigate(RouteName.Journals, { replace: true });
-    }
-  }, [isCreateJournalLoading]);
-
   const handleAddAttestation = async () => {
     const key = attestationsData.length + 1;
     const record = {
       key,
       workType:
         workTypesData && workTypesData.length > 0
-          ? workTypesData[0].name
+          ? {
+              id: workTypesData[0].id,
+              name: workTypesData[0].name,
+            }
           : undefined,
       workTopic: undefined,
       maximumPoints: undefined,
@@ -225,8 +220,13 @@ const CreateJournalForm: FC = () => {
       laboratoryTopics: laboratoryTopicsData,
     };
 
+    console.log(formData);
+
     createJournalAPI(formData)
       .unwrap()
+      .then(() => {
+        navigate(RouteName.Journals, { replace: true });
+      })
       .catch((err) => {
         message.error("Произошла ошибка при создании журнала");
         console.error(err.data);
@@ -500,20 +500,22 @@ const CreateJournalForm: FC = () => {
                     ),
                     {
                       validator: (_, value: number) => {
+                        console.log("validate");
                         const availableHours = +value;
-                        if (isNaN(availableHours)) {
+                        if (isNaN(availableHours) || availableHours < 0) {
                           return Promise.reject();
                         }
 
-                        const hours = practiceTopicsData.length * 2;
+                        const hours = lectureTopicsData.length * 2;
                         if (availableHours >= hours) {
                           return Promise.resolve();
                         }
+
                         return Promise.reject(
                           new Error(
-                            `Не хватает ${
+                            `Не хватает количества часов (${
                               hours - availableHours
-                            } часов. Проверьте темы занятий.`
+                            }). Проверьте темы занятий.`
                           )
                         );
                       },
@@ -536,7 +538,7 @@ const CreateJournalForm: FC = () => {
                     {
                       validator: (_, value: number) => {
                         const availableHours = +value;
-                        if (isNaN(availableHours)) {
+                        if (isNaN(availableHours) || availableHours < 0) {
                           return Promise.reject();
                         }
 
@@ -544,11 +546,12 @@ const CreateJournalForm: FC = () => {
                         if (availableHours >= hours) {
                           return Promise.resolve();
                         }
+
                         return Promise.reject(
                           new Error(
-                            `Не хватает ${
+                            `Не хватает количества часов (${
                               hours - availableHours
-                            } часов. Проверьте темы занятий.`
+                            }). Проверьте темы занятий.`
                           )
                         );
                       },
@@ -571,7 +574,7 @@ const CreateJournalForm: FC = () => {
                     {
                       validator: (_, value: number) => {
                         const availableHours = +value;
-                        if (isNaN(availableHours)) {
+                        if (isNaN(availableHours) || availableHours < 0) {
                           return Promise.reject();
                         }
 
@@ -579,11 +582,12 @@ const CreateJournalForm: FC = () => {
                         if (availableHours >= hours) {
                           return Promise.resolve();
                         }
+
                         return Promise.reject(
                           new Error(
-                            `Не хватает ${
+                            `Не хватает количества часов (${
                               hours - availableHours
-                            } часов. Проверьте темы занятий.`
+                            }). Проверьте темы занятий.`
                           )
                         );
                       },

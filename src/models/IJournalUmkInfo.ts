@@ -5,10 +5,10 @@ export interface IJournalUmkInfo {
   lectureHours: number;
   practiceHours: number;
   laboratoryHours: number;
-  pointsForThree: number | null;
-  pointsForFour: number | null;
-  pointsForFive: number | null;
-  maximumPoints: number | null;
+  pointsForThree?: number;
+  pointsForFour?: number;
+  pointsForFive?: number;
+  maximumPoints?: number;
   attestations: IAttestation[];
   lectureTopics: ILessonTopic[];
   practiceTopics: ILessonTopic[];

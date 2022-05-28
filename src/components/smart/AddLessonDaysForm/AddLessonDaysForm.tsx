@@ -1,7 +1,10 @@
-import { Form, Row, Col, Button, DatePicker, Space, Alert } from "antd";
+import { ExclamationOutlined } from "@ant-design/icons";
+import { Form, Row, Col, Button, DatePicker, Space, Alert, Select } from "antd";
 import moment from "moment";
 import { FC, useRef, useState } from "react";
+import { LABORATORY, LECTURE, PRACTICE } from "../../../constants/lessons";
 import { ILesson } from "../../../models/ILesson";
+import { ISubgroup } from "../../../models/ISubgroup";
 import { IUpdateLessonArgs } from "../../../services/lessons/lessons.interface";
 import { useUpdateManyLessonsMutation } from "../../../services/lessons/lessons.service";
 import { rules } from "../../../utils/rules";
@@ -9,11 +12,39 @@ import { AddLessonDaysFormProps } from "./AddLessonDaysForm.interface";
 import { ILessonDay } from "./LessonDaysModal/LessonDays/LessonDays.interface";
 import LessonDaysModal from "./LessonDaysModal/LessonDaysModal";
 
+const { Option } = Select;
+
+const ALL_SUBGROUPS = "Все подгруппы";
+
+const calcAvailableLessonsCount = (
+  maxLessonsCount: number,
+  subgroups: ISubgroup[],
+  lessons: ILesson[],
+  lessonType: string
+) => {
+  if (subgroups.length > 1) {
+    return (
+      maxLessonsCount -
+      lessons.filter((lesson) => lesson.subgroups.length > 1).length
+    );
+  }
+
+  return (
+    maxLessonsCount -
+    lessons.filter(
+      (lesson) =>
+        lesson.subgroups.includes(subgroups[0]) &&
+        lesson.topic.type.name === lessonType
+    ).length
+  );
+};
+
 const AddLessonDaysForm: FC<AddLessonDaysFormProps> = ({
   lessons,
-  lecturesCount,
-  practicesCount,
-  laboratoriesCount,
+  maxLecturesCount,
+  maxPracticesCount,
+  maxLaboratoriesCount,
+  subgroups,
   setIsModalVisible,
 }) => {
   const [isLecturesModalVisible, setIsLecturesModalVisible] =
@@ -27,6 +58,26 @@ const AddLessonDaysForm: FC<AddLessonDaysFormProps> = ({
   const [practiceDays, setPracticeDays] = useState<ILessonDay[]>([]);
   const [laboratoryDays, setLaboratoryDays] = useState<ILessonDay[]>([]);
 
+  const [selectedSubgroup, setSelectedSubgroup] =
+    useState<string>(ALL_SUBGROUPS);
+
+  const [availableLecturesCount, setAvailableLecturesCount] = useState<number>(
+    calcAvailableLessonsCount(maxLecturesCount, subgroups, lessons, LECTURE)
+  );
+  const [availablePracticesCount, setAvailablePracticesCount] =
+    useState<number>(
+      calcAvailableLessonsCount(maxPracticesCount, subgroups, lessons, PRACTICE)
+    );
+  const [availableLaboratoriesCount, setAvailableLaboratoriesCount] =
+    useState<number>(
+      calcAvailableLessonsCount(
+        maxPracticesCount,
+        subgroups,
+        lessons,
+        LABORATORY
+      )
+    );
+
   const lecturesBtRef = useRef<HTMLButtonElement>(null);
   const practiceBtRef = useRef<HTMLButtonElement>(null);
   const laboratoryBtRef = useRef<HTMLButtonElement>(null);
@@ -34,12 +85,53 @@ const AddLessonDaysForm: FC<AddLessonDaysFormProps> = ({
   const [updateManyLessonsAPI, { isLoading: isUpdateManyLessonsLoading }] =
     useUpdateManyLessonsMutation();
 
+  const handleSubgroupChange = (value: string) => {
+    console.log(value);
+    if (value === ALL_SUBGROUPS) {
+      setSelectedSubgroup(ALL_SUBGROUPS);
+
+      setAvailableLecturesCount(
+        maxLecturesCount -
+          lessons.filter((lesson) => lesson.subgroups.length > 1).length
+      );
+    } else {
+      const subgroup = subgroups.find(
+        (subgroup) => subgroup.number.value === +value
+      );
+
+      if (subgroup) {
+        setAvailablePracticesCount(
+          maxPracticesCount -
+            lessons.filter(
+              (lesson) =>
+                lesson.subgroups.includes(subgroup) &&
+                lesson.topic.type.name === PRACTICE
+            ).length
+        );
+        setAvailableLaboratoriesCount(
+          maxLaboratoriesCount -
+            lessons.filter(
+              (lesson) =>
+                lesson.subgroups.includes(subgroup) &&
+                lesson.topic.type.name === LABORATORY
+            ).length
+        );
+        setSelectedSubgroup(subgroup.number.value.toString());
+      }
+    }
+  };
+
+  // console.log("Lectures", availableLecturesCount);
+  // console.log("Practices", availablePracticesCount);
+  // console.log("Laboratories", availableLaboratoriesCount);
+  // console.log("selectedSubgroup", selectedSubgroup);
+
   const onFinish = async (values: any) => {
     const date: moment.Moment = values.date.clone();
 
-    const availableLectures = calcAvailableLessons(lessons, "Лекция");
-    const availablePractices = calcAvailableLessons(lessons, "Практика");
-    const availableLaboratories = calcAvailableLessons(lessons, "Лабораторная");
+    const availableLectures = calcAvailableLessons(lessons, LECTURE);
+    const availablePractices = calcAvailableLessons(lessons, PRACTICE);
+    const availableLaboratories = calcAvailableLessons(lessons, LABORATORY);
 
     const lectureDates = calcLessonsDates(
       lectureDays,
@@ -77,7 +169,7 @@ const AddLessonDaysForm: FC<AddLessonDaysFormProps> = ({
         })),
       ];
 
-      await updateManyLessonsAPI({ lessons: result });
+      // await updateManyLessonsAPI({ items: result });
     }
 
     setIsModalVisible(false);
@@ -87,9 +179,28 @@ const AddLessonDaysForm: FC<AddLessonDaysFormProps> = ({
     <>
       <Form labelCol={{ span: 5 }} onFinish={onFinish}>
         <Row>
-          {lecturesCount > 0 && (
+          {subgroups.length > 1 && (
             <Col span={24}>
-              <Form.Item label={"Лекция"} colon={false}>
+              <Form.Item label={"Подгруппа"} colon={false}>
+                <Select
+                  onChange={handleSubgroupChange}
+                  value={selectedSubgroup}
+                >
+                  <>
+                    <Option key={ALL_SUBGROUPS}>{ALL_SUBGROUPS}</Option>
+                    {subgroups.map((subgroup) => (
+                      <Option key={subgroup.number.value}>
+                        {subgroup.number.value}
+                      </Option>
+                    ))}
+                  </>
+                </Select>
+              </Form.Item>
+            </Col>
+          )}
+          {availableLecturesCount > 0 && selectedSubgroup === ALL_SUBGROUPS && (
+            <Col span={24}>
+              <Form.Item label={LECTURE} colon={false}>
                 <Button
                   onClick={() => setIsLecturesModalVisible(true)}
                   style={{ width: "100%" }}
@@ -108,47 +219,49 @@ const AddLessonDaysForm: FC<AddLessonDaysFormProps> = ({
             </Col>
           )}
 
-          {practicesCount > 0 && (
-            <Col span={24}>
-              <Form.Item label={"Практика"} colon={false}>
-                <Button
-                  onClick={() => setIsPracticeModalVisible(true)}
-                  style={{ width: "100%" }}
-                  ref={practiceBtRef}
-                >
-                  Нажмите для добавления
-                </Button>
-                <LessonDaysModal
-                  title="Дни практик"
-                  isModalVisible={isPracticeModalVisible}
-                  setIsModalVisible={setIsPracticeModalVisible}
-                  buttonRef={practiceBtRef}
-                  setDays={setPracticeDays}
-                />
-              </Form.Item>
-            </Col>
-          )}
+          {availablePracticesCount > 0 &&
+            (selectedSubgroup !== ALL_SUBGROUPS || subgroups.length === 1) && (
+              <Col span={24}>
+                <Form.Item label={PRACTICE} colon={false}>
+                  <Button
+                    onClick={() => setIsPracticeModalVisible(true)}
+                    style={{ width: "100%" }}
+                    ref={practiceBtRef}
+                  >
+                    Нажмите для добавления
+                  </Button>
+                  <LessonDaysModal
+                    title="Дни практик"
+                    isModalVisible={isPracticeModalVisible}
+                    setIsModalVisible={setIsPracticeModalVisible}
+                    buttonRef={practiceBtRef}
+                    setDays={setPracticeDays}
+                  />
+                </Form.Item>
+              </Col>
+            )}
 
-          {laboratoriesCount > 0 && (
-            <Col span={24}>
-              <Form.Item label={"Лабораторная"} colon={false}>
-                <Button
-                  onClick={() => setIsLaboratoryModalVisible(true)}
-                  style={{ width: "100%" }}
-                  ref={laboratoryBtRef}
-                >
-                  Нажмите для добавления
-                </Button>
-                <LessonDaysModal
-                  title="Дни лабораторных"
-                  isModalVisible={isLaboratoryModalVisible}
-                  setIsModalVisible={setIsLaboratoryModalVisible}
-                  buttonRef={laboratoryBtRef}
-                  setDays={setLaboratoryDays}
-                />
-              </Form.Item>
-            </Col>
-          )}
+          {availableLaboratoriesCount > 0 &&
+            (selectedSubgroup !== ALL_SUBGROUPS || subgroups.length === 1) && (
+              <Col span={24}>
+                <Form.Item label={LABORATORY} colon={false}>
+                  <Button
+                    onClick={() => setIsLaboratoryModalVisible(true)}
+                    style={{ width: "100%" }}
+                    ref={laboratoryBtRef}
+                  >
+                    Нажмите для добавления
+                  </Button>
+                  <LessonDaysModal
+                    title="Дни лабораторных"
+                    isModalVisible={isLaboratoryModalVisible}
+                    setIsModalVisible={setIsLaboratoryModalVisible}
+                    buttonRef={laboratoryBtRef}
+                    setDays={setLaboratoryDays}
+                  />
+                </Form.Item>
+              </Col>
+            )}
 
           <Col span={24}>
             <Form.Item
@@ -165,6 +278,7 @@ const AddLessonDaysForm: FC<AddLessonDaysFormProps> = ({
 
         <Form.Item>
           <Alert
+            icon={<ExclamationOutlined style={{ color: "red" }} />}
             type="error"
             showIcon
             style={{ width: "100%" }}
@@ -173,20 +287,18 @@ const AddLessonDaysForm: FC<AddLessonDaysFormProps> = ({
           />
         </Form.Item>
 
-        <Form.Item>
-          <Row justify="end">
-            <Space>
-              <Button onClick={() => setIsModalVisible(false)}>Отменить</Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={isUpdateManyLessonsLoading}
-              >
-                Добавить
-              </Button>
-            </Space>
-          </Row>
-        </Form.Item>
+        <Row justify="end">
+          <Space>
+            <Button onClick={() => setIsModalVisible(false)}>Отменить</Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={isUpdateManyLessonsLoading}
+            >
+              Добавить
+            </Button>
+          </Space>
+        </Row>
       </Form>
     </>
   );
@@ -313,7 +425,7 @@ const calcLessonsDates = (
 const calcAvailableLessons = (lessons: ILesson[], lessonType: string) => {
   return lessons.filter(
     (lesson) =>
-      lesson.type === lessonType &&
+      lesson.topic.type.name === lessonType &&
       (!lesson.date || moment(lesson.date) >= moment().add(1, "d"))
   );
 };

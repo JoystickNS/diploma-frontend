@@ -1,8 +1,17 @@
 import { IJournalList } from "../../models/IJournalList";
 import { IJournalFullInfo } from "../../models/IJournalFullInfo";
 import { api } from "../api";
-import { ICreateJournalArgs, IJournalListArgs } from "./journals.interface";
+import {
+  ICreateJournalArgs,
+  ICreateJournalSubgroupArgs,
+  IDeleteJournalSubgroupArgs,
+  IJournalListArgs,
+  IUpdateJournalSubgroupsStudentsArgs,
+  IUpdateJournalSubgroupStudentArgs,
+} from "./journals.interface";
 import { IJournalUmkInfo } from "../../models/IJournalUmkInfo";
+import { ISubgroup } from "../../models/ISubgroup";
+import { IStudentSubgroup } from "../../models/IStudentSubgroup";
 
 export const journalsAPI = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -13,6 +22,39 @@ export const journalsAPI = api.injectEndpoints({
         body,
       }),
       invalidatesTags: ["Journals"],
+    }),
+
+    createJournalSubgroup: builder.mutation<
+      ISubgroup,
+      ICreateJournalSubgroupArgs
+    >({
+      query: (body) => ({
+        url: `journals/${body.journalId}/subgroups`,
+        method: "post",
+        body,
+      }),
+    }),
+
+    updateJournalSubgroupStudent: builder.mutation<
+      IStudentSubgroup,
+      IUpdateJournalSubgroupStudentArgs
+    >({
+      query: (body) => ({
+        url: `journals/${body.journalId}/subgroups/${body.subgroupId}/students/${body.studentId}`,
+        method: "put",
+        body,
+      }),
+    }),
+
+    updateManyJournalSubgroupStudent: builder.mutation<
+      IStudentSubgroup[],
+      IUpdateJournalSubgroupsStudentsArgs
+    >({
+      query: (body) => ({
+        url: `journals/${body.items[0].journalId}/subgroups/students/`,
+        method: "put",
+        body,
+      }),
     }),
 
     getJournalsList: builder.query<IJournalList[], IJournalListArgs>({
@@ -50,14 +92,29 @@ export const journalsAPI = api.injectEndpoints({
       }),
       providesTags: ["JournalFullInfo"],
     }),
+
+    deleteJournalSubgroup: builder.mutation<
+      ISubgroup,
+      IDeleteJournalSubgroupArgs
+    >({
+      query: (body) => ({
+        url: `journals/${body.journalId}/subgroups/${body.subgroupId}`,
+        method: "delete",
+        body,
+      }),
+    }),
   }),
 });
 
 export const {
   useCreateJournalMutation,
+  useCreateJournalSubgroupMutation,
+  useUpdateJournalSubgroupStudentMutation,
+  useUpdateManyJournalSubgroupStudentMutation,
   useGetJournalsListQuery,
   useGetMyJournalsListQuery,
   useGetJournalUmkInfoQuery,
   useGetJournalFullInfoQuery,
   useGetJournalsUmksListQuery,
+  useDeleteJournalSubgroupMutation,
 } = journalsAPI;

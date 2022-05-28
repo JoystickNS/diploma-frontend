@@ -49,7 +49,6 @@ const App: FC = () => {
           });
       })
       .catch((err) => {
-        console.error(err.data);
         dispatch(initialize());
       });
   }, []);
