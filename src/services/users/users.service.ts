@@ -16,8 +16,7 @@ export const usersAPI = api.injectEndpoints({
     addRole: builder.mutation<void, IUserRoleArgs>({
       query: (body) => ({
         url: "users-on-roles",
-        method: "post",
-        body,
+        method: "POST",
       }),
       invalidatesTags: ["Users"],
     }),
@@ -25,8 +24,7 @@ export const usersAPI = api.injectEndpoints({
     deleteRole: builder.mutation<void, IUserRoleArgs>({
       query: (body) => ({
         url: "users-on-roles",
-        method: "delete",
-        body,
+        method: "DELETE",
       }),
       invalidatesTags: ["Users"],
     }),

@@ -109,10 +109,10 @@ const LessonTopicTable: FC<LessonTopicTableProps> = ({
 
   const columns = [
     {
-      title: "№ занятия",
+      title: "№",
       isEditable: false,
       dataIndex: "key",
-      width: "10%",
+      width: "5%",
       align: "center",
     },
     {
@@ -120,6 +120,7 @@ const LessonTopicTable: FC<LessonTopicTableProps> = ({
       isEditable: true,
       dataIndex: "name",
       align: "center",
+      render: (text: string) => <div style={{ textAlign: "left" }}>{text}</div>,
     },
     {
       title: "Действия",

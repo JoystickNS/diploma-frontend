@@ -1,40 +1,61 @@
+import { IDelete } from "../../models/IDelete";
 import { ILesson } from "../../models/ILesson";
 import { api } from "../api";
 import {
-  IGetLessonsArgs,
+  ICreateLessonArgs,
+  ICreateManyLessonsArgs,
+  IDeleteLessonArgs,
   IUpdateLessonArgs,
   IUpdateManyLessonsArgs,
 } from "./lessons.interface";
 
 export const lessonsAPI = api.injectEndpoints({
   endpoints: (builder) => ({
-    getLessons: builder.query<ILesson[], IGetLessonsArgs | undefined>({
-      query: (queryArgs) => ({
-        url: "lessons",
-        params: queryArgs,
-      }),
-      providesTags: ["Lessons"],
-    }),
-    updateOneLesson: builder.mutation<ILesson, IUpdateLessonArgs>({
+    createLesson: builder.mutation<ILesson, ICreateLessonArgs>({
       query: (body) => ({
-        url: `lessons/${body.id}`,
-        method: "put",
+        url: `journals/${body.journalId}/lessons`,
+        method: "POST",
         body,
       }),
     }),
-    updateManyLessons: builder.mutation<void, IUpdateManyLessonsArgs>({
+
+    createManyLessons: builder.mutation<ILesson[], ICreateManyLessonsArgs>({
       query: (body) => ({
-        url: "lessons/update-many",
-        method: "put",
+        url: `journals/${body.items[0].journalId}/lessons/create-many`,
+        method: "POST",
         body,
       }),
-      invalidatesTags: ["Lessons"],
+    }),
+
+    updateLesson: builder.mutation<ILesson, IUpdateLessonArgs>({
+      query: (body) => ({
+        url: `journals/${body.journalId}/lessons/${body.lessonId}`,
+        method: "PATCH",
+        body,
+      }),
+    }),
+
+    updateManyLessons: builder.mutation<ILesson[], IUpdateManyLessonsArgs>({
+      query: (body) => ({
+        url: `journals/${body.items[0].journalId}/lessons/update-many`,
+        method: "PATCH",
+        body,
+      }),
+    }),
+
+    deleteLesson: builder.mutation<IDelete, IDeleteLessonArgs>({
+      query: (body) => ({
+        url: `journals/${body.journalId}/lessons/${body.lessonId}`,
+        method: "DELETE",
+      }),
     }),
   }),
 });
 
 export const {
-  useGetLessonsQuery,
-  useUpdateOneLessonMutation,
+  useCreateLessonMutation,
+  useCreateManyLessonsMutation,
+  useUpdateLessonMutation,
   useUpdateManyLessonsMutation,
+  useDeleteLessonMutation,
 } = lessonsAPI;

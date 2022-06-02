@@ -2,24 +2,27 @@ import { IAttestation } from "./IAttestation";
 import { IDictionary } from "./IDictionary";
 import { ILesson } from "./ILesson";
 import { ILessonTopic } from "./ILessonTopic";
+import { IPoint } from "./IPoint";
 import { IStudent } from "./IStudent";
 import { ISubgroup } from "./ISubgroup";
+import { IVisit } from "./IVisit";
 
 export interface IJournalFullInfo {
   id: number;
+  attestations: IAttestation[];
+  control: IDictionary;
   discipline: IDictionary;
   group: IDictionary;
-  subgroups: ISubgroup[];
-  semester: number;
-  control: IDictionary;
-  lectureHours: number;
-  practiceHours: number;
   laboratoryHours: number;
-  maximumPoints?: number;
+  lectureHours: number;
   lessons: ILesson[];
-  lectureTopics: ILessonTopic[];
-  practiceTopics: ILessonTopic[];
-  laboratoryTopics: ILessonTopic[];
-  attestations: IAttestation[];
+  lessonTypes: IDictionary[];
+  lessonTopics: ILessonTopic[];
+  maximumPoints?: number;
+  practiceHours: number;
+  semester: number;
   students: IStudent[];
+  subgroups: ISubgroup[];
+  points: IPoint[];
+  visits: IVisit[];
 }

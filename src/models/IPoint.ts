@@ -3,4 +3,5 @@ export interface IPoint {
   annotation: string;
   numberOfPoints: number;
   studentId: number;
+  lessonId: number;
 }

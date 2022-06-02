@@ -9,8 +9,7 @@ export const authAPI = api.injectEndpoints({
     login: builder.mutation<IAuth, IAuthArgs>({
       query: (body) => ({
         url: "auth/login",
-        method: "post",
-        body,
+        method: "POST",
       }),
     }),
 
@@ -23,14 +22,14 @@ export const authAPI = api.injectEndpoints({
     refresh: builder.mutation<IRefresh, void>({
       query: () => ({
         url: "auth/refresh",
-        method: "put",
+        method: "PATCH",
       }),
     }),
 
     logout: builder.mutation<void, void>({
       query: () => ({
         url: "auth/logout",
-        method: "delete",
+        method: "DELETE",
       }),
     }),
   }),

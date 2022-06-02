@@ -9,10 +9,10 @@ export const appSLice = createSlice({
   name: "app",
   initialState,
   reducers: {
-    initialize(state) {
+    initializeAction(state) {
       state.isInitialized = true;
     },
   },
 });
 
-export const { initialize } = appSLice.actions;
+export const { initializeAction } = appSLice.actions;

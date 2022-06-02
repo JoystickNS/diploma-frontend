@@ -5,7 +5,7 @@ import { Location, useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch } from "../../../../hooks/redux";
 import { IAuthArgs } from "../../../../services/auth/auth.interface";
 import { useLoginMutation } from "../../../../services/auth/auth.service";
-import { login } from "../../../../store/slices/auth/auth.slice";
+import { loginAction } from "../../../../store/slices/auth/auth.slice";
 import { IAuthFormProps } from "./AuthForm.interface";
 
 export type LocationProps = {
@@ -39,7 +39,7 @@ const AuthForm: FC<IAuthFormProps> = ({
     const res = await loginAPI(values);
     if ("data" in res) {
       const data = res.data;
-      dispatch(login(data));
+      dispatch(loginAction(data));
       navigate(from, { replace: true });
     }
   };

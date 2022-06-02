@@ -15,12 +15,13 @@ import Journals from "./pages/Journals/Journals";
 import Main from "./pages/Main/Main";
 import Reports from "./pages/Reports/Reports";
 import { authAPI } from "./services/auth/auth.service";
-import { initialize } from "./store/slices/app/app.slice";
-import { login } from "./store/slices/auth/auth.slice";
+import { initializeAction } from "./store/slices/app/app.slice";
+import { loginAction } from "./store/slices/auth/auth.slice";
 import Journal from "./pages/Journals/Journal/Journal";
 import CreateJournal from "./pages/Journals/Journal/CreateJournal/CreateJournal";
 import "moment/locale/ru";
 import moment from "moment";
+import db from "./assets/images/bd.png";
 
 const App: FC = () => {
   const isAppInitialized = useAppSelector((state) => state.app.isInitialized);
@@ -37,7 +38,7 @@ const App: FC = () => {
           .unwrap()
           .then((mePayload) => {
             dispatch(
-              login({
+              loginAction({
                 user: mePayload,
                 ...refreshPayload,
               })
@@ -45,11 +46,11 @@ const App: FC = () => {
           })
           .catch((err) => console.error(err.data))
           .finally(() => {
-            dispatch(initialize());
+            dispatch(initializeAction());
           });
       })
       .catch((err) => {
-        dispatch(initialize());
+        dispatch(initializeAction());
       });
   }, []);
 
@@ -58,10 +59,12 @@ const App: FC = () => {
       <Route path="/" element={<AppLayout />}>
         {/* START Authorized routes */}
 
+        <Route path="bd" element={<img src={db}></img>}></Route>
+
         {/* START Main */}
-        {/* <Route element={<RequireAuth />}> */}
-        <Route path={RouteName.Main} element={<Main />} />
-        {/* </Route> */}
+        <Route element={<RequireAuth />}>
+          <Route path={RouteName.Main} element={<Main />} />
+        </Route>
         {/* END Main */}
 
         {/* START Admin */}

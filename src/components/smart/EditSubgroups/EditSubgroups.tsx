@@ -12,18 +12,18 @@ import {
 import { ColumnsType } from "antd/lib/table";
 import { FC, memo, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { IUpdateJournalSubgroupsStudentsArgs } from "../../../services/journals/journals.interface";
+import { IUpdateSubgroupsStudentsArgs } from "../../../services/subgroups/subgroups.interface";
 import {
-  useCreateJournalSubgroupMutation,
-  useDeleteJournalSubgroupMutation,
-  useUpdateJournalSubgroupStudentMutation,
-  useUpdateManyJournalSubgroupStudentMutation,
-} from "../../../services/journals/journals.service";
+  useCreateSubgroupMutation,
+  useDeleteSubgroupMutation,
+  useUpdateManySubgroupStudentMutation,
+  useUpdateSubgroupStudentMutation,
+} from "../../../services/subgroups/subgroups.service";
 import {
-  addJournalSubgroup,
-  deleteJournalSubgroup,
-  updateJournalSubgroupStudent,
-  updateManyJournalSubgroupsStudents,
+  addSubgroupAction,
+  deleteSubgroupAction,
+  updateSubgroupStudentAction,
+  updateManySubgroupsStudentsAction,
 } from "../../../store/slices/journal/journal.slice";
 import AppPopConfirm from "../../simple/AppPopConfirm/AppPopConfirm";
 import PopCodeConfirm from "../PopCodeConfirm/PopCodeConfirm";
@@ -35,33 +35,28 @@ import {
 const { Option } = Select;
 
 const EditSubgroups: FC<EditSubgroupsProps> = ({
-  group,
+  groupId,
   journalId,
   students,
   subgroups,
 }) => {
   const dispatch = useDispatch();
 
+  const [createSubgroupAPI, { isLoading: isCreateSubgroupLoading }] =
+    useCreateSubgroupMutation();
   const [
-    createJournalSubgroupAPI,
-    { isLoading: isCreateJournalSubgroupLoading },
-  ] = useCreateJournalSubgroupMutation();
+    updateSubgroupStudentAPI,
+    { isLoading: isUpdateSubgroupStudentLoading },
+  ] = useUpdateSubgroupStudentMutation();
+  const [deleteSubgroupAPI, { isLoading: isDeleteSubgroupLoading }] =
+    useDeleteSubgroupMutation();
   const [
-    updateJournalSubgroupStudentAPI,
-    { isLoading: isUpdateJournalSubgroupStudentLoading },
-  ] = useUpdateJournalSubgroupStudentMutation();
-  const [
-    deleteJournalSubgroupAPI,
-    { isLoading: isDeleteJournalSubgroupLoading },
-  ] = useDeleteJournalSubgroupMutation();
-  const [
-    updateManyJournalSubgroupStudentAPI,
-    { isLoading: isUpdateManyJournalSubgroupStudentLoading },
-  ] = useUpdateManyJournalSubgroupStudentMutation();
+    updateManySubgroupStudentAPI,
+    { isLoading: isUpdateManySubgroupStudentLoading },
+  ] = useUpdateManySubgroupStudentMutation();
 
   const isJournalSubgroupsStudentsLoading =
-    isUpdateJournalSubgroupStudentLoading ||
-    isUpdateManyJournalSubgroupStudentLoading;
+    isUpdateSubgroupStudentLoading || isUpdateManySubgroupStudentLoading;
 
   const searchInput = useRef<InputRef>(null);
 
@@ -75,9 +70,9 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
 
   const handleCreateNewSubgroup = () => {
     const subgroup = subgroups.length + 1;
-    createJournalSubgroupAPI({ journalId, group, subgroup })
+    createSubgroupAPI({ journalId, groupId, subgroup })
       .unwrap()
-      .then((payload) => dispatch(addJournalSubgroup(payload)))
+      .then((payload) => dispatch(addSubgroupAction(payload)))
       .catch(() => message.error("Произошла ошибка при создании подгруппы"));
   };
 
@@ -85,18 +80,18 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
     record: IEditSubgroupsTable,
     subgroupId: number
   ) => {
-    if (record.subgroup.id === subgroupId) {
+    if (record.subgroup?.id === subgroupId) {
       return;
     }
 
-    updateJournalSubgroupStudentAPI({
+    updateSubgroupStudentAPI({
       journalId,
       studentId: record.key,
-      subgroupId: record.subgroup.id,
+      subgroupId: record.subgroup?.id,
       newSubgroupId: subgroupId,
     })
       .unwrap()
-      .then((payload) => dispatch(updateJournalSubgroupStudent(payload)))
+      .then((payload) => dispatch(updateSubgroupStudentAction(payload)))
       .catch(() =>
         message.error("Произошла ошибка при обновлении подгруппы студента")
       );
@@ -104,29 +99,28 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
 
   const handleDeleteLastSubgroup = () => {
     const subgroup = subgroups[subgroups.length - 1];
-    deleteJournalSubgroupAPI({
+
+    deleteSubgroupAPI({
       journalId,
       subgroupId: subgroup.id,
     })
       .unwrap()
       .then((payload) => {
-        dispatch(deleteJournalSubgroup(payload.id));
+        dispatch(deleteSubgroupAction(payload.id));
       })
       .catch(() => {
-        message.error(
-          `В подгруппе ${subgroup.number.value} не должно быть студентов`
-        );
+        message.error("Произошла ошибка при удалении подгруппы");
       });
   };
 
   const handleDivideEqually = () => {
-    const temp: IUpdateJournalSubgroupsStudentsArgs = { items: [] };
+    const temp: IUpdateSubgroupsStudentsArgs = { items: [] };
     const middleI = Math.floor(students.length / 2);
     const firstSubgroupId = subgroups.find(
-      (subgroup) => subgroup.number.value === 1
+      (subgroup) => subgroup.subgroupNumber.value === 1
     )?.id;
     const secondSubgroupId = subgroups.find(
-      (subgroup) => subgroup.number.value === 2
+      (subgroup) => subgroup.subgroupNumber.value === 2
     )?.id;
 
     if (firstSubgroupId && secondSubgroupId) {
@@ -134,7 +128,7 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
         temp.items.push({
           journalId,
           studentId: students[i].id,
-          subgroupId: students[i].subgroup.id,
+          subgroupId: students[i].subgroup?.id,
           newSubgroupId: firstSubgroupId,
         });
       }
@@ -143,17 +137,17 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
         temp.items.push({
           journalId,
           studentId: students[i].id,
-          subgroupId: students[i].subgroup.id,
+          subgroupId: students[i].subgroup?.id,
           newSubgroupId: secondSubgroupId,
         });
       }
 
-      updateManyJournalSubgroupStudentAPI(temp)
+      updateManySubgroupStudentAPI(temp)
         .unwrap()
-        .then((payload) =>
-          dispatch(updateManyJournalSubgroupsStudents(payload))
-        )
-        .catch(() => message.error("Произошла ошибка при обновлении подгрупп"));
+        .then((payload) => dispatch(updateManySubgroupsStudentsAction(payload)))
+        .catch(() =>
+          message.error("Произошла ошибка при обновлении подгрупп студентов")
+        );
     } else {
       message.error("Произошла ошибка при обновлении подгрупп");
     }
@@ -246,17 +240,20 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
       align: "center",
       filters: [
         ...subgroups.map((subgroup) => ({
-          text: subgroup.number.value,
-          value: subgroup.number.value,
+          text: subgroup.subgroupNumber.value,
+          value: subgroup.subgroupNumber.value,
         })),
       ],
-      onFilter: (value, record) => record.subgroup.number.value === value,
+      onFilter: (value, record) =>
+        record.subgroup?.subgroupNumber.value === value,
       render: (text: string, record: IEditSubgroupsTable, index: number) => (
         <Select
           size="small"
           style={{ width: "100%" }}
-          value={record.subgroup.number.value}
-          defaultValue={record.subgroup.number.value}
+          value={record.subgroup ? record.subgroup.subgroupNumber.value : null}
+          defaultValue={
+            record.subgroup ? record.subgroup.subgroupNumber.value : null
+          }
           onChange={(value: number) => {
             handleChangeSubgroup(record, +value);
           }}
@@ -264,7 +261,7 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
           disabled={isJournalSubgroupsStudentsLoading}
         >
           {subgroups.map((subgroup) => (
-            <Option key={subgroup.id}>{subgroup.number.value}</Option>
+            <Option key={subgroup.id}>{subgroup.subgroupNumber.value}</Option>
           ))}
         </Select>
       ),
@@ -293,7 +290,7 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
         <span>Количество подгрупп в группе: {subgroups.length}</span>
         <Button
           onClick={handleCreateNewSubgroup}
-          loading={isCreateJournalSubgroupLoading}
+          loading={isCreateSubgroupLoading}
           style={{ width: "40%" }}
         >
           Создать подгруппу № {subgroups.length + 1}
@@ -304,13 +301,15 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
               <Button>Разделить поровну на 2 подгруппы</Button>
             </AppPopConfirm>
             <PopCodeConfirm
-              code={subgroups[subgroups.length - 1].number.value.toString()}
+              code={subgroups[
+                subgroups.length - 1
+              ].subgroupNumber.value.toString()}
               onOk={handleDeleteLastSubgroup}
               text="Вся успеваемость для данной подгруппы будет удалена!"
             >
               <Button
                 danger
-                loading={isDeleteJournalSubgroupLoading}
+                loading={isDeleteSubgroupLoading}
                 style={{ width: "40%" }}
               >
                 Удалить подгруппу {subgroups.length}

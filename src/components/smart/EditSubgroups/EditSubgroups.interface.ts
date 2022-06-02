@@ -2,7 +2,7 @@ import { IStudent } from "../../../models/IStudent";
 import { ISubgroup } from "../../../models/ISubgroup";
 
 export interface EditSubgroupsProps {
-  group: string;
+  groupId: number;
   journalId: number;
   students: IStudent[];
   subgroups: ISubgroup[];

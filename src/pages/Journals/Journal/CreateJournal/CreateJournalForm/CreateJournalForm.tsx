@@ -155,7 +155,7 @@ const CreateJournalForm: FC = () => {
       (
         await dispatch(
           journalsAPI.endpoints.getJournalsUmksList.initiate({
-            discipline: value,
+            disciplineId: value,
           })
         )
       ).data
@@ -164,7 +164,7 @@ const CreateJournalForm: FC = () => {
   };
 
   const handleJournalUmkChange = async (value: string) => {
-    const journalId = +value.split("id:")[1];
+    const journalId = +value;
     setIsFormDataFetching(true);
     const journalUmkInfo = (
       await dispatch(
@@ -212,17 +212,17 @@ const CreateJournalForm: FC = () => {
   };
 
   const onFinish = async (values: any) => {
-    const formData = {
+    const body = {
       ...values,
       attestations: attestationsData,
-      lectureTopics: lectureTopicsData,
-      practiceTopics: practiceTopicsData,
-      laboratoryTopics: laboratoryTopicsData,
+      lectureTopics: lectureTopicsData.map((topic) => topic.name),
+      practiceTopics: practiceTopicsData.map((topic) => topic.name),
+      laboratoryTopics: laboratoryTopicsData.map((topic) => topic.name),
     };
 
-    console.log(formData);
+    console.log(body);
 
-    createJournalAPI(formData)
+    createJournalAPI(body)
       .unwrap()
       .then(() => {
         navigate(RouteName.Journals, { replace: true });
@@ -347,7 +347,7 @@ const CreateJournalForm: FC = () => {
         inputNode = (
           <Select showSearch loading={isWorkTypesLoading}>
             {workTypesData?.map((workType) => (
-              <Option key={workType.id} value={workType.name}>
+              <Option key={workType.id} value={workType.id}>
                 {workType.name}
               </Option>
             ))}
@@ -402,17 +402,17 @@ const CreateJournalForm: FC = () => {
         <Row justify="center">
           <Col xs={{ span: 24 }} lg={{ span: 16 }}>
             <Form.Item
-              name="group"
+              name="groupId"
               rules={[rules.required("Обязательное поле")]}
             >
               <Select
-                showArrow
                 showSearch
                 placeholder="Выберите группу"
                 loading={isGroupsLoading}
+                optionFilterProp="label"
               >
                 {groupsData?.map((group) => (
-                  <Option key={group.id} value={group.name}>
+                  <Option key={group.id} value={group.id} label={group.name}>
                     {group.name}
                   </Option>
                 ))}
@@ -420,7 +420,7 @@ const CreateJournalForm: FC = () => {
             </Form.Item>
 
             <Form.Item
-              name="discipline"
+              name="disciplineId"
               rules={[rules.required("Обязательное поле")]}
             >
               <Select
@@ -428,9 +428,14 @@ const CreateJournalForm: FC = () => {
                 placeholder="Выберите дисциплину"
                 loading={isDisciplinesLoading}
                 onChange={(value) => handleDisciplineChange(value)}
+                optionFilterProp="label"
               >
                 {disciplinesData?.map((discipline) => (
-                  <Option key={discipline.id} value={discipline.name}>
+                  <Option
+                    key={discipline.id}
+                    value={discipline.id}
+                    label={discipline.name}
+                  >
                     {discipline.name}
                   </Option>
                 ))}
@@ -444,6 +449,7 @@ const CreateJournalForm: FC = () => {
                   placeholder="Выбрать данные из существующего журнала"
                   loading={isDisciplinesLoading}
                   onSelect={(value: string) => handleJournalUmkChange(value)}
+                  optionFilterProp="label"
                 >
                   {journalsListData?.map((journalUmk) => {
                     const name = `${journalUmk.user.lastName} ${journalUmk.user.firstName[0]}. ${journalUmk.user.middleName[0]}`;
@@ -451,7 +457,8 @@ const CreateJournalForm: FC = () => {
                     return (
                       <Option
                         key={journalUmk.id}
-                        value={`${value} id:${journalUmk.id}`}
+                        value={journalUmk.id}
+                        label={`${value}`}
                       >
                         {value}
                       </Option>
@@ -462,7 +469,7 @@ const CreateJournalForm: FC = () => {
             )}
 
             <Form.Item
-              name="control"
+              name="controlId"
               rules={[rules.required("Обязательное поле")]}
             >
               <Select
@@ -470,7 +477,7 @@ const CreateJournalForm: FC = () => {
                 placeholder="Выберите контроль"
               >
                 {controlsData?.map((control) => (
-                  <Option key={control.id} value={control.name}>
+                  <Option key={control.id} value={control.id}>
                     {control.name}
                   </Option>
                 ))}
@@ -500,7 +507,6 @@ const CreateJournalForm: FC = () => {
                     ),
                     {
                       validator: (_, value: number) => {
-                        console.log("validate");
                         const availableHours = +value;
                         if (isNaN(availableHours) || availableHours < 0) {
                           return Promise.reject();

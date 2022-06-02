@@ -6,7 +6,7 @@ import { RouteName } from "../../../constants/routes";
 import { useAppDispatch, useAppSelector } from "../../../hooks/redux";
 import { api } from "../../../services/api";
 import { useLogoutMutation } from "../../../services/auth/auth.service";
-import { logout } from "../../../store/slices/auth/auth.slice";
+import { logoutAction } from "../../../store/slices/auth/auth.slice";
 import Logo from "../../simple/Logo/Logo";
 import s from "./AppHeader.module.scss";
 
@@ -21,7 +21,7 @@ const AppHeader: FC = () => {
   const logoutHandler = async () => {
     await logoutAPI();
     if (!logoutAPIIsError) {
-      dispatch(logout());
+      dispatch(logoutAction());
       dispatch(api.util.resetApiState());
     }
   };
