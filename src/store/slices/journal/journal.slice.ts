@@ -5,8 +5,10 @@ import { IAttestation } from "../../../models/IAttestation";
 import { IDictionary } from "../../../models/IDictionary";
 import { IJournalFullInfo } from "../../../models/IJournalFullInfo";
 import { ILesson } from "../../../models/ILesson";
+import { IStartLesson } from "../../../models/IStartLesson";
 import { IStudentSubgroup } from "../../../models/IStudentSubgroup";
 import { ISubgroup } from "../../../models/ISubgroup";
+import { IVisit } from "../../../models/IVisit";
 import { sortLessonsByDate } from "../../../utils/general";
 import { IStudentSubgroupAction } from "./journal.interface";
 
@@ -58,6 +60,7 @@ export const journalSlice = createSlice({
 
     addSubgroupAction(state, action: PayloadAction<ISubgroup>) {
       const lessons = _.cloneDeep(state.lessons);
+
       lessons.forEach((lesson) => {
         if (lesson.lessonType.name === LECTURE) {
           lesson.subgroups.push(action.payload);
@@ -70,6 +73,20 @@ export const journalSlice = createSlice({
 
     addManySubgroupLessonsAction(state, action: PayloadAction<ILesson[]>) {
       state.lessons = [..._.cloneDeep(state.lessons), ...action.payload];
+    },
+
+    startLessonAction(state, action: PayloadAction<IStartLesson>) {
+      const lessons = _.cloneDeep(state.lessons);
+
+      for (let i = 0; i < lessons.length; i++) {
+        if (lessons[i].id === action.payload.lessonId) {
+          lessons[i].conducted = true;
+          break;
+        }
+      }
+
+      state.lessons = lessons;
+      state.visits = [..._.cloneDeep(state.visits), ...action.payload.visits];
     },
 
     updateAttestationAction(state, action: PayloadAction<IAttestation>) {
@@ -99,7 +116,7 @@ export const journalSlice = createSlice({
     updateManyLessonsAction(state, action: PayloadAction<ILesson[]>) {
       state.lessons = _.cloneDeep(state.lessons).map((lesson) => {
         const foundLesson = action.payload.find(
-          (updatedLesson) => (updatedLesson.id = lesson.id)
+          (updatedLesson) => updatedLesson.id === lesson.id
         );
 
         if (foundLesson) {
@@ -116,11 +133,12 @@ export const journalSlice = createSlice({
     ) {
       const students = _.cloneDeep(state.students);
 
-      students.forEach((student) => {
-        if (student.id === action.payload.studentId) {
-          student.subgroup = action.payload.subgroup;
+      for (let i = 0; i < students.length; i++) {
+        if (students[i].id === action.payload.studentId) {
+          students[i].subgroup = action.payload.subgroup;
+          break;
         }
-      });
+      }
 
       state.students = students;
     },
@@ -141,6 +159,22 @@ export const journalSlice = createSlice({
       });
 
       state.students = students;
+    },
+
+    updateVisitAction(state, action: PayloadAction<IVisit>) {
+      const visits = _.cloneDeep(state.visits);
+
+      for (let i = 0; i < visits.length; i++) {
+        if (
+          visits[i].lessonId === action.payload.lessonId &&
+          visits[i].studentId === action.payload.studentId
+        ) {
+          visits[i] = action.payload;
+          break;
+        }
+      }
+
+      state.visits = visits;
     },
 
     deleteAttestationAction(state, action: PayloadAction<number>) {
@@ -175,7 +209,11 @@ export const journalSlice = createSlice({
         deletedPoints.every((deletedPoint) => deletedPoint.id !== point.id)
       );
       state.visits = _.cloneDeep(state.visits).filter((visit) =>
-        deletedVisits.every((deletedVisit) => deletedVisit.id !== visit.id)
+        deletedVisits.every(
+          (deletedVisit) =>
+            deletedVisit.lessonId !== visit.lessonId &&
+            deletedVisit.studentId !== visit.studentId
+        )
       );
       state.subgroups = state.subgroups.filter(
         (subgroup) => subgroup.id !== action.payload
@@ -209,11 +247,12 @@ export const journalSlice = createSlice({
       const { studentId, value } = action.payload;
       const students = _.cloneDeep(state.students);
 
-      students.forEach((student) => {
-        if (student.id === studentId) {
-          student.subgroup.subgroupNumber.value = value;
+      for (let i = 0; i < students.length; i++) {
+        if (students[i].id === studentId) {
+          students[i].subgroup.subgroupNumber.value = value;
+          break;
         }
-      });
+      }
 
       state.students = students;
     },
@@ -226,11 +265,13 @@ export const {
   addManyLessonsAction,
   addSubgroupAction,
   addManySubgroupLessonsAction,
+  startLessonAction,
   updateAttestationAction,
   updateLessonAction,
   updateManyLessonsAction,
   updateSubgroupStudentAction,
   updateManySubgroupsStudentsAction,
+  updateVisitAction,
   deleteAttestationAction,
   deleteLessonAction,
   deleteSubgroupAction,

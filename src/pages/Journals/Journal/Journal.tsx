@@ -1,26 +1,33 @@
 import {
   Button,
+  Checkbox,
   Col,
   Form,
   FormInstance,
-  Input,
   message,
   Modal,
   Row,
-  Select,
   Space,
   Spin,
   Table,
   Tag,
+  Tooltip,
 } from "antd";
 import moment from "moment";
-import { createContext, FC, useEffect, useState } from "react";
+import { createContext, FC, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import AddItemButton from "../../../components/simple/AddItemButton/AddItemButton";
 import DeleteButton from "../../../components/smart/DeleteButton/DeleteButton";
 import { useGetJournalFullInfoQuery } from "../../../services/journals/journals.service";
-import { useDeleteLessonMutation } from "../../../services/lessons/lessons.service";
-import { StudentPoint, StudentVisit } from "./Journal.interface";
+import {
+  useDeleteLessonMutation,
+  useStartLessonMutation,
+} from "../../../services/lessons/lessons.service";
+import {
+  IJournalTable,
+  IStudentPoint,
+  IStudentVisit,
+} from "./Journal.interface";
 import EditButton from "../../../components/smart/EditButton/EditButton";
 import { useForm } from "antd/lib/form/Form";
 import { IAttestation } from "../../../models/IAttestation";
@@ -32,6 +39,8 @@ import {
   deleteAttestationAction,
   deleteLessonAction,
   setJournalAction,
+  startLessonAction,
+  updateManySubgroupsStudentsAction,
 } from "../../../store/slices/journal/journal.slice";
 import { useAppSelector } from "../../../hooks/redux";
 import { LECTURE, PRACTICE } from "../../../constants/lessons";
@@ -39,9 +48,11 @@ import { ISubgroup } from "../../../models/ISubgroup";
 import AddManyLessonsForm from "../../../components/smart/AddManyLessonsForm/AddManyLessonsForm";
 import AddLessonModal from "../../../components/smart/AddLessonModal/AddLessonModal";
 import AddAttestationModal from "../../../components/smart/AddAttestationModal/AddAttestationModal";
-
-const { Option } = Select;
-const { TextArea } = Input;
+import { useCreateSubgroupStudentMutation } from "../../../services/subgroups/subgroups.service";
+import { IStudentSubgroup } from "../../../models/IStudentSubgroup";
+import _ from "lodash";
+import StartButton from "../../../components/smart/StartButton/StartButton";
+import { CheckboxChangeEvent } from "antd/lib/checkbox";
 
 const EditableContext = createContext<FormInstance<any> | null>(null);
 
@@ -63,11 +74,17 @@ const Journal: FC = () => {
   const journal = useAppSelector((state) => state.journal);
 
   const {
-    data: journalFullInfoData,
+    data: JournalFullInfo,
     isLoading: isJournalFullInfoLoading,
     isSuccess: isJournalFullInfoSuccess,
   } = useGetJournalFullInfoQuery(journalId ? +journalId : 0);
 
+  const [
+    createSubgroupStudentAPI,
+    { isLoading: isCreateSubgroupStudentLoading },
+  ] = useCreateSubgroupStudentMutation();
+  const [startLessonAPI, { isLoading: isStartLessonLoading }] =
+    useStartLessonMutation();
   const [deleteLessonAPI, { isLoading: isDeleteLessonLoading }] =
     useDeleteLessonMutation();
   const [deleteAttestationAPI, { isLoading: isDeleteAttestationLoading }] =
@@ -86,7 +103,8 @@ const Journal: FC = () => {
     useState<boolean>(false);
   const [isLessonEditing, setIsLessonEditing] = useState<boolean>(false);
 
-  const [dataSource, setDataSource] = useState<any>([]);
+  const [isSomeStudentWithoutSubgroup, setIsSomeStudentWithoutSubgroup] =
+    useState<boolean>(false);
 
   const [attestationEditForm] = useForm();
   const [lessonForm] = useForm();
@@ -116,53 +134,41 @@ const Journal: FC = () => {
 
   useEffect(() => {
     if (isJournalFullInfoSuccess) {
-      setDataSource(
-        journalFullInfoData.students.map((student) => {
-          const temp = {} as any;
-
-          temp.key = student.id;
-          temp.studentName = `${student.lastName} ${student.firstName} ${student.middleName}`;
-
-          const studentVisits: StudentVisit[] = [];
-          const studentPoints: StudentPoint[] = [];
-
-          journalFullInfoData.lessons.forEach((lesson) => {
-            // const studentVisit = lesson.visits.find(
-            //   (visit) => visit.studentId === student.id
-            // );
-            // const studentPoint = lesson.points.find(
-            //   (point) => point.studentId === student.id
-            // );
-            // if (studentVisit) {
-            //   studentVisits.push({
-            //     ...studentVisit,
-            //     lessonId: lesson.id,
-            //   });
-            // }
-            // if (studentPoint) {
-            //   studentPoints.push({
-            //     ...studentPoint,
-            //     lessonId: lesson.id,
-            //   });
-            // }
-          });
-
-          studentVisits.forEach(
-            (studentVisit) =>
-              (temp[`${studentVisit.lessonId} isAbsent`] = studentVisit)
-          );
-
-          studentPoints.forEach(
-            (studentPoint) =>
-              (temp[`${studentPoint.lessonId} isAbsent`] = studentPoint)
-          );
-
-          return temp;
-        })
-      );
-      dispatch(setJournalAction(journalFullInfoData));
+      dispatch(setJournalAction(JournalFullInfo));
     }
   }, [isJournalFullInfoLoading]);
+
+  useEffect(() => {
+    (async () => {
+      const result: IStudentSubgroup[] = [];
+      const studentsWithoutSubgroup = journal.students.filter(
+        (student) => !student.subgroup
+      );
+
+      if (journal.subgroups.length === 1) {
+        await Promise.all(
+          studentsWithoutSubgroup.map(async (student) =>
+            createSubgroupStudentAPI({
+              journalId: journal.id,
+              studentId: student.id,
+              subgroupId: journal.subgroups[0].id,
+            })
+              .unwrap()
+              .then((payload) => result.push(payload))
+              .catch(() =>
+                message.error("Произошла ошибка при добавлении нового студента")
+              )
+          )
+        );
+
+        if (result.length > 0) {
+          dispatch(updateManySubgroupsStudentsAction(result));
+        }
+      } else if (isSomeStudentWithoutSubgroup) {
+        setIsSomeStudentWithoutSubgroup(false);
+      }
+    })();
+  }, [journal.students, journal.subgroups]);
 
   const handleAddLesson = () => {
     lessonForm.setFieldsValue({
@@ -224,6 +230,29 @@ const Journal: FC = () => {
       .unwrap()
       .then((payload) => dispatch(deleteAttestationAction(payload.id)))
       .catch(() => message.error("Произошла ошибка при удалении аттестации"));
+  };
+
+  const handleStartLesson = (lesson: ILesson) => {
+    startLessonAPI({
+      journalId: journal.id,
+      lessonId: lesson.id,
+      subgroupIds: lesson.subgroups.map((subgroup) => subgroup.id),
+    })
+      .unwrap()
+      .then((payload) => dispatch(startLessonAction(payload)))
+      .catch(() =>
+        message.error("Произошла ошибка при попытке начать занятие")
+      );
+  };
+
+  const handleAbsentChange = (
+    value: boolean,
+    lessonId: number,
+    studentId: number
+  ) => {
+    console.log(value);
+    console.log(lessonId);
+    console.log(studentId);
   };
 
   // const EditableJournalHeaderCell: React.FC<EditableJournalHeaderCellProps> = ({
@@ -315,6 +344,58 @@ const Journal: FC = () => {
   //   return <th {...restProps}>{childNode}</th>;
   // };
 
+  const dataSource: IJournalTable[] = useMemo(
+    () =>
+      journal.students.map((student) => {
+        const temp = {} as IJournalTable;
+
+        temp.key = student.id;
+        temp.studentName = `${student.lastName} ${student.firstName} ${student.middleName}`;
+        temp.subgroup = student.subgroup;
+
+        const studentVisits: IStudentVisit[] = [];
+        const studentPoints: IStudentPoint[] = [];
+
+        journal.lessons.forEach((lesson) => {
+          const studentVisit = journal.visits.find(
+            (visit) =>
+              visit.studentId === student.id && visit.lessonId === lesson.id
+          );
+          const studentPoint = journal.points.find(
+            (point) =>
+              point.studentId === student.id && point.lessonId === lesson.id
+          );
+          if (studentVisit) {
+            studentVisits.push({
+              ...studentVisit,
+              lessonId: lesson.id,
+            });
+          }
+          if (studentPoint) {
+            studentPoints.push({
+              ...studentPoint,
+              lessonId: lesson.id,
+            });
+          }
+        });
+
+        studentVisits.forEach(
+          (studentVisit) =>
+            (temp[`${studentVisit.lessonId} isAbsent`] = studentVisit)
+        );
+
+        studentPoints.forEach(
+          (studentPoint) =>
+            (temp[`${studentPoint.lessonId} isAbsent`] = studentPoint)
+        );
+
+        return temp;
+      }),
+    [journal]
+  );
+
+  console.log(dataSource);
+
   const columns: any[] = [];
 
   columns.push({
@@ -325,19 +406,27 @@ const Journal: FC = () => {
     width: "250px",
     isEditable: true,
     sorter: (a: any, b: any) => (a.studentName > b.studentName ? 1 : -1),
-    render: (text: string) => {
-      const currentDate = "03.05.2022";
-      return currentDate === text ? (
-        <div style={{ backgroundColor: "red", textAlign: "left" }}>{text}</div>
-      ) : (
-        <div
-          style={{
-            wordWrap: "break-word",
-            wordBreak: "break-word",
-            textAlign: "left",
-          }}
-        >
-          {text}
+    render: (text: string, record: IJournalTable) => {
+      const isSubgroup = record.subgroup || journal.subgroups.length === 1;
+      return (
+        <div style={{ textAlign: "left", color: isSubgroup ? "black" : "red" }}>
+          {isSubgroup ? (
+            text
+          ) : (
+            <Tooltip
+              title={
+                <div
+                  style={{ cursor: "pointer" }}
+                  onClick={() => setIsEditSubgroupsModalVisible(true)}
+                >
+                  Не назначена подгруппа
+                </div>
+              }
+              color="black"
+            >
+              {text}
+            </Tooltip>
+          )}
         </div>
       );
     },
@@ -395,6 +484,15 @@ const Journal: FC = () => {
                       handleDeleteLesson(lesson.id, lesson.subgroups)
                     }
                   />
+                  {!lesson.conducted ? (
+                    <StartButton
+                      buttonSize={18}
+                      tooltipText="Начать занятие"
+                      onClick={() => handleStartLesson(lesson)}
+                    />
+                  ) : (
+                    <Button>РЕДАКТ</Button>
+                  )}
                 </Space>
                 <AddItemButton tooltipText="Добавить колонку на эту дату" />
               </Row>
@@ -407,23 +505,37 @@ const Journal: FC = () => {
               isEditable: true,
               className: "editable-row",
               dataIndex: "lessonTopic",
-              onHeaderCell: (col: any) => ({
-                id: lesson.id,
-                title: col.title,
-                isEditable: col.isEditable,
-                dataIndex: col.dataIndex,
-                lessonType: lesson.lessonType.name,
-              }),
+              // onHeaderCell: (col: any) => ({
+              //   id: lesson.id,
+              //   title: col.title,
+              //   isEditable: col.isEditable,
+              //   dataIndex: col.dataIndex,
+              //   lessonType: lesson.lessonType.name,
+              // }),
               children: [
                 {
                   title: "Студент отсутствует",
                   dataIndex: `${lesson.id} isAbsent`,
                   align: "center",
-                  width: "270px",
-                  render: (text: string, record: any) => {
-                    if (record[`${lesson.id} isAbsent`]?.isAbsent === true) {
-                      return "Н";
-                    }
+                  width: "300px",
+                  render: (text: string, record: IJournalTable) => {
+                    return lesson.conducted
+                      ? lesson.subgroups.find(
+                          (lessonSubgroup) =>
+                            lessonSubgroup.id === record.subgroup.id
+                        ) && (
+                          <Checkbox
+                            checked={record[`${lesson.id} isAbsent`]?.isAbsent}
+                            onChange={(e: CheckboxChangeEvent) =>
+                              handleAbsentChange(
+                                e.target.checked,
+                                lesson.id,
+                                record.key
+                              )
+                            }
+                          />
+                        )
+                      : record[`${lesson.id} isAbsent`]?.isAbsent && "H";
                   },
                 },
               ],
@@ -498,7 +610,8 @@ const Journal: FC = () => {
   const loading =
     isJournalFullInfoLoading ||
     isDeleteLessonLoading ||
-    isDeleteAttestationLoading;
+    isDeleteAttestationLoading ||
+    isStartLessonLoading;
   const lecturesCount = Math.ceil(journal.lectureHours / 2) || 0;
   const practicesCount = Math.ceil(journal.practiceHours / 2) || 0;
   const laboratoriesCount = Math.ceil(journal.laboratoryHours / 2) || 0;
@@ -535,12 +648,20 @@ const Journal: FC = () => {
 
         <Col span={8}>
           <Space direction="vertical">
-            <Button onClick={handleAddLesson}>Добавить занятие</Button>
-            <Button onClick={() => setIsAddLessonsModalVisible(true)}>
+            <Button onClick={handleAddLesson} loading={loading}>
+              Добавить занятие
+            </Button>
+            <Button
+              onClick={() => setIsAddLessonsModalVisible(true)}
+              loading={loading}
+            >
               Сформировать сетку занятий
             </Button>
             {(journal.practiceHours > 0 || journal.laboratoryHours > 0) && (
-              <Button onClick={() => setIsEditSubgroupsModalVisible(true)}>
+              <Button
+                onClick={() => setIsEditSubgroupsModalVisible(true)}
+                loading={loading}
+              >
                 Редактирование подгрупп
               </Button>
             )}
@@ -548,7 +669,9 @@ const Journal: FC = () => {
         </Col>
         <Col span={8}>
           <Space direction="vertical">
-            <Button onClick={handleAddAttestation}>Добавить аттестацию</Button>
+            <Button onClick={handleAddAttestation} loading={loading}>
+              Добавить аттестацию
+            </Button>
           </Space>
         </Col>
       </Row>
@@ -568,6 +691,17 @@ const Journal: FC = () => {
         pagination={false}
         size="small"
         loading={loading}
+        onRow={(record, rowIndex) => {
+          return {
+            onClick: (event) => {
+              console.log(record);
+            }, // click row
+            onDoubleClick: (event) => {}, // double click row
+            onContextMenu: (event) => {}, // right button click row
+            onMouseEnter: (event) => {}, // mouse enter row
+            onMouseLeave: (event) => {}, // mouse leave row
+          };
+        }}
       />
 
       <AddLessonModal
@@ -575,12 +709,10 @@ const Journal: FC = () => {
         updateMode={isLessonEditing}
         visible={isAddOneLessonModalVisible}
         journalId={journal.id}
+        lessons={journal.lessons}
         lessonTypes={journal.lessonTypes}
-        subgroups={journal.subgroups}
         lessonTopics={journal.lessonTopics}
-        maxLecturesCount={lecturesCount}
-        maxPracticesCount={practicesCount}
-        maxLaboratoriesCount={laboratoriesCount}
+        subgroups={journal.subgroups}
         setIsModalVisible={setIsAddLessonModalVisible}
       />
 
@@ -630,48 +762,6 @@ const Journal: FC = () => {
         updateMode={isAttestationEditing}
         setIsModalVisible={setIsAddAttestationModalVisible}
       />
-      {/* <Modal
-        centered
-        title="Редактирование промежуточной аттестации"
-        onCancel={() => setIsEditAttestationModalVisible(false)}
-        onOk={() => handleSaveAttestation()}
-        okButtonProps={{ loading: isUpdateAttestationLoading }}
-        maskClosable={false}
-        visible={isEditAttestationModalVisible}
-        okText="Сохранить"
-      >
-        <Form form={attestationEditForm}>
-          <FormItem name="id" style={{ display: "none" }} />
-
-          <FormItem name="workType" label="Тип работы" labelCol={{ span: 7 }}>
-            <Select style={{ width: "100%" }}>
-              {workTypesData?.map((workType) => (
-                <Option key={workType.id} value={workType.name}>
-                  {workType.name}
-                </Option>
-              ))}
-            </Select>
-          </FormItem>
-
-          <FormItem name="workTopic" label="Тема работы" labelCol={{ span: 7 }}>
-            <TextArea rows={3} maxLength={250} showCount />
-          </FormItem>
-
-          <FormItem
-            name="maximumPoints"
-            label="Максимум баллов"
-            labelCol={{ span: 7 }}
-            rules={[
-              rules.pattern(
-                /^\d{1,2}$|^$/,
-                "Введите число или оставьте поле пустым"
-              ),
-            ]}
-          >
-            <Input maxLength={2} />
-          </FormItem>
-        </Form>
-      </Modal> */}
     </>
   );
 };

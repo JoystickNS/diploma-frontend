@@ -541,7 +541,37 @@ const calcLessons = (
     return result;
   }
 
-  const lessonsDates = calcLessonsDates(lessonDays, lessonsCount, firstDate);
+  let lessonDaysSorted: ILessonDay[] = [];
+
+  const firstDateClone = firstDate.clone();
+  const firstDateNumber = firstDateClone.day();
+
+  if (firstDateNumber > 1) {
+    const fondedLessonDay = lessonDays.find(
+      (lessonDay) => lessonDay.day === firstDateClone.format("ddd")
+    );
+    if (fondedLessonDay) {
+      lessonDaysSorted.push(fondedLessonDay);
+    }
+    firstDateClone.add(1, "d");
+    while (firstDateClone.day() !== firstDateNumber) {
+      const fondedLessonDay = lessonDays.find(
+        (lessonDay) => lessonDay.day === firstDateClone.format("ddd")
+      );
+      if (fondedLessonDay) {
+        lessonDaysSorted.push(fondedLessonDay);
+      }
+      firstDateClone.add(1, "d");
+    }
+  } else {
+    lessonDaysSorted = lessonDays;
+  }
+
+  const lessonsDates = calcLessonsDates(
+    lessonDaysSorted,
+    lessonsCount,
+    firstDate
+  );
 
   const lessonTypeId =
     lessonTypes.find((item) => item.name === lessonType)?.id || -1;
@@ -549,7 +579,7 @@ const calcLessons = (
   if (isUpdateLessons) {
     result.items = [
       ...lessonsDates.map((lessonDate, i) => ({
-        id: availableLessons[i].id,
+        lessonId: availableLessons[i].id,
         journalId: journalId,
         lessonTypeId,
         subgroupIds,

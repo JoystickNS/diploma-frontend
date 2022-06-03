@@ -49,6 +49,7 @@ export const journalsAPI = api.injectEndpoints({
         url: `journals/${journalId}/full-info`,
       }),
       providesTags: ["JournalFullInfo"],
+      keepUnusedDataFor: 0,
     }),
   }),
 });

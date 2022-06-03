@@ -1,4 +1,5 @@
 import { IPoint } from "../../../models/IPoint";
+import { ISubgroup } from "../../../models/ISubgroup";
 import { IVisit } from "../../../models/IVisit";
 
 export interface EditableJournalHeaderCellProps {
@@ -10,10 +11,18 @@ export interface EditableJournalHeaderCellProps {
   lessonType: string;
 }
 
-export interface StudentVisit extends IVisit {
+export interface IStudentVisit extends IVisit {
   lessonId: number;
 }
 
-export interface StudentPoint extends IPoint {
+export interface IStudentPoint extends IPoint {
   lessonId: number;
+}
+
+export interface IJournalTable {
+  key: number;
+  studentName: string;
+  subgroup: ISubgroup;
+  visits: IVisit;
+  [key: string]: any;
 }

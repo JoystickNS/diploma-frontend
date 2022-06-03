@@ -6,6 +6,7 @@ import {
   IUpdateSubgroupStudentArgs,
   IUpdateSubgroupsStudentsArgs,
   IDeleteSubgroupArgs,
+  ICreateSubgroupStudentArgs,
 } from "./subgroups.interface";
 import { IDelete } from "../../models/IDelete";
 
@@ -14,6 +15,17 @@ export const subgroupsAPI = api.injectEndpoints({
     createSubgroup: builder.mutation<ISubgroup, ICreateSubgroupArgs>({
       query: (body) => ({
         url: `journals/${body.journalId}/subgroups`,
+        method: "POST",
+        body,
+      }),
+    }),
+
+    createSubgroupStudent: builder.mutation<
+      IStudentSubgroup,
+      ICreateSubgroupStudentArgs
+    >({
+      query: (body) => ({
+        url: `journals/${body.journalId}/subgroups/${body.subgroupId}/students/${body.studentId}`,
         method: "POST",
         body,
       }),
@@ -52,6 +64,7 @@ export const subgroupsAPI = api.injectEndpoints({
 
 export const {
   useCreateSubgroupMutation,
+  useCreateSubgroupStudentMutation,
   useUpdateManySubgroupStudentMutation,
   useUpdateSubgroupStudentMutation,
   useDeleteSubgroupMutation,

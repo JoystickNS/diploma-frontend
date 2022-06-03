@@ -100,6 +100,17 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
   const handleDeleteLastSubgroup = () => {
     const subgroup = subgroups[subgroups.length - 1];
 
+    const student = students.find(
+      (student) => student.subgroup.id === subgroup.id
+    );
+
+    if (student) {
+      message.error(
+        `В подгруппе ${subgroup.subgroupNumber.value} не должно быть студентов`
+      );
+      return;
+    }
+
     deleteSubgroupAPI({
       journalId,
       subgroupId: subgroup.id,

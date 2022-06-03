@@ -12,8 +12,10 @@ export interface ICreateManyLessonsArgs {
   items: ICreateLessonArgs[];
 }
 
-export interface IGetLessonsArgs {
-  journalId?: string;
+export interface IStartLessonArgs {
+  journalId: number;
+  lessonId: number;
+  subgroupIds: number[];
 }
 
 export interface IUpdateLessonArgs extends ICreateLessonArgs {

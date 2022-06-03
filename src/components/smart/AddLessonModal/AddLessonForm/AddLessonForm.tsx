@@ -1,28 +1,7 @@
-import {
-  AutoComplete,
-  Button,
-  DatePicker,
-  Form,
-  Input,
-  message,
-  Row,
-  Select,
-  Space,
-} from "antd";
+import { AutoComplete, DatePicker, Form, Input, Select } from "antd";
 import moment from "moment";
 import { FC, useEffect, useState } from "react";
 import { ALL_SUBGROUPS } from "../../../../constants/general";
-import { LABORATORY, LECTURE, PRACTICE } from "../../../../constants/lessons";
-import { useAppDispatch } from "../../../../hooks/redux";
-import { IDictionary } from "../../../../models/IDictionary";
-import {
-  useCreateLessonMutation,
-  useUpdateLessonMutation,
-} from "../../../../services/lessons/lessons.service";
-import {
-  addLessonAction,
-  updateLessonAction,
-} from "../../../../store/slices/journal/journal.slice";
 import { rules } from "../../../../utils/rules";
 import { AddLessonFormProps } from "./AddLessonForm.interface";
 
@@ -34,24 +13,13 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 const AddLessonForm: FC<AddLessonFormProps> = ({
-  journalId,
+  lessons,
   lessonTypes,
-  subgroups,
   lessonTopics,
+  subgroups,
   updateMode,
   form,
-  maxLecturesCount,
-  maxPracticesCount,
-  maxLaboratoriesCount,
-  setIsModalVisible,
 }) => {
-  const dispatch = useAppDispatch();
-
-  const [createLessonAPI, { isLoading: isCreateLessonLoading }] =
-    useCreateLessonMutation();
-  const [updateLessonAPI, { isLoading: isUpdateLessonLoading }] =
-    useUpdateLessonMutation();
-
   const [autoCompleteOptions, setAutoCompleteOptions] = useState<
     IAutoCompleteOption[]
   >([]);
@@ -79,50 +47,12 @@ const AddLessonForm: FC<AddLessonFormProps> = ({
     );
   };
 
-  const createLesson = (body: any) => {
-    createLessonAPI(body)
-      .unwrap()
-      .then((payload) => {
-        dispatch(addLessonAction(payload));
-        setIsModalVisible(false);
-      })
-      .catch(() => message.error("Произошла ошибка при создании занятия"));
-  };
-
-  const updateLesson = (body: any) => {
-    updateLessonAPI(body)
-      .unwrap()
-      .then((payload) => {
-        dispatch(updateLessonAction(payload));
-        setIsModalVisible(false);
-      })
-      .catch(() => message.error("Произошла ошибка при обновлении занятия"));
-  };
-
-  const onFinish = (values: any) => {
-    let subgroupIds: number[] = [];
-
-    if (subgroups.length > 1) {
-      if (values.subgroupIds === 0) {
-        subgroupIds = subgroups.map((subgroup) => subgroup.id);
-      } else {
-        subgroupIds = [values.subgroupIds];
-      }
-    } else {
-      subgroupIds = [subgroups[0].id];
-    }
-
-    let body = {
-      ...values,
-      journalId,
-      subgroupIds,
-    };
-
-    updateMode ? updateLesson(body) : createLesson(body);
-  };
+  const isEditConductedLesson = !!lessons.find(
+    (lesson) => lesson.conducted && lesson.id === form.getFieldValue("lessonId")
+  );
 
   return (
-    <Form form={form} labelCol={{ span: 6 }} onFinish={onFinish}>
+    <Form form={form} labelCol={{ span: 6 }}>
       {updateMode && <Form.Item name="lessonId" style={{ display: "none" }} />}
       {subgroups.length > 1 && (
         <Form.Item
@@ -131,7 +61,7 @@ const AddLessonForm: FC<AddLessonFormProps> = ({
           name="subgroupIds"
           rules={[rules.required("Обязательное поле")]}
         >
-          <Select>
+          <Select disabled={isEditConductedLesson}>
             <>
               <Option key={0} value={0}>
                 {ALL_SUBGROUPS}
@@ -152,7 +82,10 @@ const AddLessonForm: FC<AddLessonFormProps> = ({
         name="lessonTypeId"
         rules={[rules.required("Обязательное поле")]}
       >
-        <Select onChange={handleLessonTypeChange}>
+        <Select
+          onChange={handleLessonTypeChange}
+          disabled={isEditConductedLesson}
+        >
           {lessonTypes.map((lessonType) => (
             <Option key={lessonType.id} value={lessonType.id}>
               {lessonType.name}
@@ -188,21 +121,12 @@ const AddLessonForm: FC<AddLessonFormProps> = ({
         rules={[rules.required("Обязательное поле")]}
         initialValue={moment()}
       >
-        <DatePicker style={{ width: "100%" }} format="DD.MM.YYYY" />
+        <DatePicker
+          style={{ width: "100%" }}
+          format="DD.MM.YYYY"
+          disabled={isEditConductedLesson}
+        />
       </Form.Item>
-
-      <Row justify="end">
-        <Space>
-          <Button onClick={() => setIsModalVisible(false)}>Отменить</Button>
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={isCreateLessonLoading || isUpdateLessonLoading}
-          >
-            {updateMode ? "Сохранить" : "Добавить"}
-          </Button>
-        </Space>
-      </Row>
     </Form>
   );
 };

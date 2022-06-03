@@ -4,6 +4,12 @@ export interface ICreateSubgroupArgs {
   subgroup: number;
 }
 
+export interface ICreateSubgroupStudentArgs {
+  journalId: number;
+  subgroupId: number;
+  studentId: number;
+}
+
 export interface IUpdateSubgroupStudentArgs {
   subgroupId: number;
   journalId: number;

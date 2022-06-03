@@ -76,7 +76,9 @@ const AddAttestationModal: FC<AddAttestationModalProps> = ({
       }
       onOk={onFinish}
       okText={updateMode ? "Сохранить" : "Добавить"}
-      okButtonProps={{ loading: isUpdateAttestationLoading }}
+      okButtonProps={{
+        loading: isCreateAttestationLoading || isUpdateAttestationLoading,
+      }}
       onCancel={() => setIsModalVisible(false)}
       maskClosable={false}
       visible={visible}

@@ -87,13 +87,10 @@ const CreateJournalForm: FC = () => {
     const key = attestationsData.length + 1;
     const record = {
       key,
+      workTypeId:
+        workTypesData && workTypesData.length > 0 ? workTypesData[0].id : 0,
       workType:
-        workTypesData && workTypesData.length > 0
-          ? {
-              id: workTypesData[0].id,
-              name: workTypesData[0].name,
-            }
-          : undefined,
+        workTypesData && workTypesData.length > 0 ? workTypesData[0].name : "",
       workTopic: undefined,
       maximumPoints: undefined,
     };
@@ -178,7 +175,10 @@ const CreateJournalForm: FC = () => {
       setAttestationsData(
         journalUmkInfo.attestations.map((attestation, i) => ({
           key: i + 1,
-          ...attestation,
+          workTypeId: attestation.workType.id,
+          workType: attestation.workType.name,
+          maximumPoints: attestation.maximumPoints,
+          workTopic: attestation.workTopic,
         }))
       );
     }
@@ -214,13 +214,15 @@ const CreateJournalForm: FC = () => {
   const onFinish = async (values: any) => {
     const body = {
       ...values,
-      attestations: attestationsData,
+      attestations: attestationsData.map((attestation) => ({
+        workTypeId: attestation.workTypeId,
+        workTopic: attestation.workTopic,
+        maximumPoints: attestation.maximumPoints,
+      })),
       lectureTopics: lectureTopicsData.map((topic) => topic.name),
       practiceTopics: practiceTopicsData.map((topic) => topic.name),
       laboratoryTopics: laboratoryTopicsData.map((topic) => topic.name),
     };
-
-    console.log(body);
 
     createJournalAPI(body)
       .unwrap()
@@ -341,11 +343,12 @@ const CreateJournalForm: FC = () => {
   }) => {
     let inputNode;
     let inputRules: Rule[] = [];
+    let formItemName = dataIndex;
 
-    switch (dataIndex) {
+    switch (formItemName) {
       case "workType":
         inputNode = (
-          <Select showSearch loading={isWorkTypesLoading}>
+          <Select loading={isWorkTypesLoading}>
             {workTypesData?.map((workType) => (
               <Option key={workType.id} value={workType.id}>
                 {workType.name}
@@ -353,10 +356,11 @@ const CreateJournalForm: FC = () => {
             ))}
           </Select>
         );
+        formItemName = "workTypeId";
         break;
 
       case "workTopic":
-        inputNode = <Input maxLength={200} />;
+        inputNode = <Input maxLength={250} />;
         break;
 
       case "maximumPoints":
@@ -374,7 +378,7 @@ const CreateJournalForm: FC = () => {
 
     if (isEditing) {
       childNode = (
-        <Form.Item name={dataIndex} style={{ margin: 0 }} rules={inputRules}>
+        <Form.Item name={formItemName} style={{ margin: 0 }} rules={inputRules}>
           {inputNode}
         </Form.Item>
       );
@@ -674,7 +678,6 @@ const CreateJournalForm: FC = () => {
                     footer={() => (
                       <Row justify="center">
                         <AddItemButton
-                          tooltipText="Добавить промежуточную аттестацию"
                           onClick={handleAddAttestation}
                           disabled={editingKey !== 0}
                         />
