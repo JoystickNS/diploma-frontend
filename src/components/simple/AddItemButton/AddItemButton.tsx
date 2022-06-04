@@ -1,6 +1,6 @@
 import { PlusOutlined } from "@ant-design/icons";
 import { Button, Popover, Tag } from "antd";
-import { FC } from "react";
+import { FC, memo } from "react";
 import { AddItemButtonProps } from "./AddItemButton.interface";
 import s from "./AddItemButton.module.scss";
 
@@ -33,4 +33,4 @@ AddItemButton.defaultProps = {
   disabled: false,
 };
 
-export default AddItemButton;
+export default memo(AddItemButton);

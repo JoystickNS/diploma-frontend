@@ -1,5 +1,6 @@
 import { SettingOutlined } from "@ant-design/icons";
 import { Alert, Button, Col, Row, Space } from "antd";
+import _ from "lodash";
 import { FC, useState } from "react";
 import LessonDay from "./LessonDay/LessonDay";
 import { ILessonDay, LessonDaysProps } from "./LessonDays.interface";
@@ -18,27 +19,27 @@ const defaultActive: ILessonDay = {
 const LessonDays: FC<LessonDaysProps> = ({ onCancel, onOk }) => {
   const [suActive, setSuActive] = useState<ILessonDay>({
     day: "пн",
-    ...defaultActive,
+    ..._.cloneDeep(defaultActive),
   });
   const [moActive, setMoActive] = useState<ILessonDay>({
     day: "вт",
-    ...defaultActive,
+    ..._.cloneDeep(defaultActive),
   });
   const [tuActive, setTuActive] = useState<ILessonDay>({
     day: "ср",
-    ...defaultActive,
+    ..._.cloneDeep(defaultActive),
   });
   const [weActive, setWeActive] = useState<ILessonDay>({
     day: "чт",
-    ...defaultActive,
+    ..._.cloneDeep(defaultActive),
   });
   const [thActive, setThActive] = useState<ILessonDay>({
     day: "пт",
-    ...defaultActive,
+    ..._.cloneDeep(defaultActive),
   });
   const [frActive, setFrActive] = useState<ILessonDay>({
     day: "сб",
-    ...defaultActive,
+    ..._.cloneDeep(defaultActive),
   });
 
   const handleOk = () => {

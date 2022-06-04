@@ -26,8 +26,8 @@ import {
   EditableLessonTopicCellProps,
   ILessonTopicTable,
 } from "../../../../../components/smart/LessonTopicTable/LessonTopicTable.interface";
-import EditButton from "../../../../../components/smart/EditButton/EditButton";
-import DeleteButton from "../../../../../components/smart/DeleteButton/DeleteButton";
+import EditButton from "../../../../../components/simple/EditButton/EditButton";
+import DeleteButton from "../../../../../components/simple/DeleteButton/DeleteButton";
 import { useGetGroupsQuery } from "../../../../../services/groups/groups.service";
 import {
   journalsAPI,
@@ -298,6 +298,7 @@ const CreateJournalForm: FC = () => {
             ) : (
               <>
                 <EditButton
+                  tooltipText="Редактировать аттестацию"
                   disabled={isSomeRowEditing}
                   onClick={() => handleEditAttestation(record)}
                 />
@@ -334,10 +335,7 @@ const CreateJournalForm: FC = () => {
   const EditableAttestationCell: React.FC<EditableLessonTopicCellProps> = ({
     isEditing,
     dataIndex,
-    title,
-    inputType,
     record,
-    index,
     children,
     ...restProps
   }) => {

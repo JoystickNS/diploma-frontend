@@ -1,14 +1,4 @@
-import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
-import {
-  AutoComplete,
-  Button,
-  Form,
-  message,
-  Popover,
-  Row,
-  Space,
-  Table,
-} from "antd";
+import { AutoComplete, Button, Form, message, Row, Space, Table } from "antd";
 import { useForm } from "antd/lib/form/Form";
 import { FC, memo, useState } from "react";
 import AddItemButton from "../../simple/AddItemButton/AddItemButton";
@@ -19,8 +9,10 @@ import {
   ILessonTopicTable,
   LessonTopicTableProps,
 } from "./LessonTopicTable.interface";
-import EditButton from "../EditButton/EditButton";
-import DeleteButton from "../DeleteButton/DeleteButton";
+import EditButton from "../../simple/EditButton/EditButton";
+import DeleteButton from "../../simple/DeleteButton/DeleteButton";
+import OkButton from "../../simple/OkButton/OkButton";
+import CancelButton from "../../simple/CancelButton/CancelButton";
 
 const LessonTopicTable: FC<LessonTopicTableProps> = ({
   lessonHours,
@@ -135,26 +127,13 @@ const LessonTopicTable: FC<LessonTopicTableProps> = ({
           <Space>
             {isRecordEditing ? (
               <>
-                <Popover content="Сохранить">
-                  <Button type="link" style={{ padding: 0 }} size="small">
-                    <CheckOutlined
-                      style={{ color: "green", fontSize: 20 }}
-                      onClick={() => handleSave()}
-                    />
-                  </Button>
-                </Popover>
-                <Popover content="Отменить">
-                  <Button type="link" style={{ padding: 0 }} size="small">
-                    <CloseOutlined
-                      style={{ color: "red", fontSize: 20 }}
-                      onClick={handleCancel}
-                    />
-                  </Button>
-                </Popover>
+                <OkButton onClick={handleSave} tooltipText="Сохранить" />
+                <CancelButton onClick={handleCancel} tooltipText="Отменить" />
               </>
             ) : (
               <>
                 <EditButton
+                  tooltipText="Редактировать"
                   onClick={() => handleEdit(record)}
                   disabled={isSomeRecordEditing}
                 />
@@ -179,9 +158,7 @@ const LessonTopicTable: FC<LessonTopicTableProps> = ({
       ...col,
       onCell: (record: ILessonTopicTable) => ({
         record,
-        inputType: "text",
         dataIndex: col.dataIndex,
-        title: col.title,
         isEditing: isEditing(record),
       }),
     };
@@ -190,10 +167,7 @@ const LessonTopicTable: FC<LessonTopicTableProps> = ({
   const EditableCell: React.FC<EditableLessonTopicCellProps> = ({
     isEditing,
     dataIndex,
-    title,
-    inputType,
     record,
-    index,
     children,
     ...restProps
   }) => {

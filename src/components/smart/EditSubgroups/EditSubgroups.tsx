@@ -117,7 +117,7 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
     })
       .unwrap()
       .then((payload) => {
-        dispatch(deleteSubgroupAction(payload.id));
+        dispatch(deleteSubgroupAction(payload));
       })
       .catch(() => {
         message.error("Произошла ошибка при удалении подгруппы");
@@ -235,15 +235,19 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
           setTimeout(() => searchInput.current?.select(), 100);
         }
       },
-      render: (text: string) => (
-        <div
-          style={{
-            textAlign: "left",
-          }}
-        >
-          {text}
-        </div>
-      ),
+      render: (text: string, record: IEditSubgroupsTable) => {
+        const subgroup = record.subgroup;
+        return (
+          <div
+            style={{
+              textAlign: "left",
+              color: subgroup ? "black" : "red",
+            }}
+          >
+            {text}
+          </div>
+        );
+      },
     },
     {
       title: "№ подгруппы",
@@ -316,7 +320,7 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
                 subgroups.length - 1
               ].subgroupNumber.value.toString()}
               onOk={handleDeleteLastSubgroup}
-              text="Вся успеваемость для данной подгруппы будет удалена!"
+              text="Все занятия и успеваемость на них будут удалены для данной подгруппы!"
             >
               <Button
                 danger

@@ -18,9 +18,6 @@ export interface EditableLessonTopicCellProps
   extends React.HTMLAttributes<HTMLElement> {
   isEditing: boolean;
   dataIndex: string;
-  title: any;
-  inputType: "number" | "text";
   record: IAttestationTable;
-  index: number;
   children: React.ReactNode;
 }

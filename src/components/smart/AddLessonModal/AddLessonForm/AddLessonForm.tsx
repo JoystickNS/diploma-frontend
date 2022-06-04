@@ -61,7 +61,7 @@ const AddLessonForm: FC<AddLessonFormProps> = ({
           name="subgroupIds"
           rules={[rules.required("Обязательное поле")]}
         >
-          <Select disabled={isEditConductedLesson}>
+          <Select disabled={updateMode && isEditConductedLesson}>
             <>
               <Option key={0} value={0}>
                 {ALL_SUBGROUPS}
@@ -84,7 +84,7 @@ const AddLessonForm: FC<AddLessonFormProps> = ({
       >
         <Select
           onChange={handleLessonTypeChange}
-          disabled={isEditConductedLesson}
+          disabled={updateMode && isEditConductedLesson}
         >
           {lessonTypes.map((lessonType) => (
             <Option key={lessonType.id} value={lessonType.id}>

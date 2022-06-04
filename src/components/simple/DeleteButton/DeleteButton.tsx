@@ -1,7 +1,7 @@
 import { DeleteOutlined } from "@ant-design/icons";
 import { Button, Popover } from "antd";
-import { FC } from "react";
-import AppPopConfirm from "../../simple/AppPopConfirm/AppPopConfirm";
+import { FC, memo } from "react";
+import AppPopConfirm from "../AppPopConfirm/AppPopConfirm";
 import { DeleteButtonProps } from "./DeleteButton.interface";
 
 const DeleteButton: FC<DeleteButtonProps> = ({
@@ -9,6 +9,8 @@ const DeleteButton: FC<DeleteButtonProps> = ({
   buttonSize,
   ...props
 }) => {
+  // console.log("RENDER DELETE BUTTON");
+
   return (
     <AppPopConfirm onConfirm={onConfirm} disabled={props.disabled}>
       <Popover content="Удалить">
@@ -29,4 +31,4 @@ DeleteButton.defaultProps = {
   buttonSize: 20,
 };
 
-export default DeleteButton;
+export default memo(DeleteButton);

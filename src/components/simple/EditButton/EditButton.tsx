@@ -1,27 +1,27 @@
 import { EditOutlined } from "@ant-design/icons";
 import { Button, Popover } from "antd";
-import { FC } from "react";
+import { FC, memo } from "react";
 import { EditButtonProps } from "./EditButton.interface";
 
-const EditButton: FC<EditButtonProps> = ({ buttonSize, onClick, ...props }) => {
+const EditButton: FC<EditButtonProps> = ({
+  buttonSize,
+  tooltipText,
+  ...props
+}) => {
+  // console.log("RENDER EDIT BUTTON");
+
   return (
-    <Popover content="Редактировать">
-      <Button
-        type="link"
-        style={{ padding: 0 }}
-        size="small"
-        disabled={props.disabled}
-      >
+    <Popover content={tooltipText}>
+      <Button type="link" style={{ padding: 0 }} size="small" {...props}>
         <EditOutlined
           style={{ color: props.disabled ? "gray" : "blue", fontSize: 20 }}
-          onClick={onClick}
         />
       </Button>
     </Popover>
   );
 };
 
-export default EditButton;
+export default memo(EditButton);
 
 EditButton.defaultProps = {
   buttonSize: 20,

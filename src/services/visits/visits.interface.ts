@@ -1,6 +1,6 @@
 export interface IUpdateVisitArgs {
-  visitId: number;
-  isAbsent: boolean;
   lessonId: number;
+  studentId: number;
+  isAbsent: boolean;
   journalId: number;
 }

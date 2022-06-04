@@ -1,6 +1,10 @@
 import { message, Modal } from "antd";
-import { FC } from "react";
+import { FC, memo } from "react";
 import { useAppDispatch } from "../../../hooks/redux";
+import {
+  ICreateLessonArgs,
+  IUpdateLessonArgs,
+} from "../../../services/lessons/lessons.interface";
 import {
   useCreateLessonMutation,
   useUpdateLessonMutation,
@@ -30,7 +34,7 @@ const AddLessonModal: FC<AddLessonModalProps> = ({
   const [updateLessonAPI, { isLoading: isUpdateLessonLoading }] =
     useUpdateLessonMutation();
 
-  const createLesson = (body: any) => {
+  const createLesson = (body: ICreateLessonArgs) => {
     createLessonAPI(body)
       .unwrap()
       .then((payload) => {
@@ -40,7 +44,7 @@ const AddLessonModal: FC<AddLessonModalProps> = ({
       .catch(() => message.error("Произошла ошибка при создании занятия"));
   };
 
-  const updateLesson = (body: any) => {
+  const updateLesson = (body: IUpdateLessonArgs) => {
     updateLessonAPI(body)
       .unwrap()
       .then((payload) => {
@@ -102,7 +106,7 @@ const AddLessonModal: FC<AddLessonModalProps> = ({
   );
 };
 
-export default AddLessonModal;
+export default memo(AddLessonModal);
 
 AddLessonModal.defaultProps = {
   updateMode: false,

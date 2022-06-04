@@ -1,5 +1,4 @@
 import { Form, Select, Input } from "antd";
-import FormItem from "antd/lib/form/FormItem";
 import TextArea from "antd/lib/input/TextArea";
 import { FC } from "react";
 import { rules } from "../../../../utils/rules";
@@ -15,10 +14,10 @@ const AddAttestationForm: FC<AddAttestationFormProps> = ({
   return (
     <Form form={form}>
       {updateMode && (
-        <FormItem name="attestationId" style={{ display: "none" }} />
+        <Form.Item name="attestationId" style={{ display: "none" }} />
       )}
 
-      <FormItem
+      <Form.Item
         name="workTypeId"
         label="Тип работы"
         labelCol={{ span: 7 }}
@@ -31,13 +30,13 @@ const AddAttestationForm: FC<AddAttestationFormProps> = ({
             </Option>
           ))}
         </Select>
-      </FormItem>
+      </Form.Item>
 
-      <FormItem name="workTopic" label="Тема работы" labelCol={{ span: 7 }}>
+      <Form.Item name="workTopic" label="Тема работы" labelCol={{ span: 7 }}>
         <TextArea rows={3} maxLength={250} showCount />
-      </FormItem>
+      </Form.Item>
 
-      <FormItem
+      <Form.Item
         name="maximumPoints"
         label="Максимум баллов"
         labelCol={{ span: 7 }}
@@ -49,9 +48,13 @@ const AddAttestationForm: FC<AddAttestationFormProps> = ({
         ]}
       >
         <Input maxLength={2} />
-      </FormItem>
+      </Form.Item>
     </Form>
   );
 };
 
 export default AddAttestationForm;
+
+AddAttestationForm.defaultProps = {
+  updateMode: false,
+};

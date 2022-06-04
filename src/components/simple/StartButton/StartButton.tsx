@@ -1,5 +1,5 @@
 import { Button, Popover } from "antd";
-import { FC } from "react";
+import { FC, memo } from "react";
 import StartIcon from "../../Icons/Start";
 import { StartButtonProps } from "./StartButton.interface";
 
@@ -8,18 +8,15 @@ const StartButton: FC<StartButtonProps> = ({
   tooltipText,
   ...props
 }) => {
+  // console.log("RENDER START BUTTON");
+
   return (
     <Popover content={tooltipText}>
-      <Button
-        type="link"
-        style={{ padding: 0, marginLeft: 2 }}
-        size="small"
-        {...props}
-      >
+      <Button type="link" style={{ padding: 0 }} size="small" {...props}>
         <StartIcon
           style={{
             fontSize: buttonSize,
-            color: "green",
+            color: props.disabled ? "gray" : "green",
           }}
         />
       </Button>
@@ -27,4 +24,4 @@ const StartButton: FC<StartButtonProps> = ({
   );
 };
 
-export default StartButton;
+export default memo(StartButton);

@@ -1,6 +1,10 @@
 import { message, Modal } from "antd";
-import { FC } from "react";
+import { FC, memo } from "react";
 import { useAppDispatch } from "../../../hooks/redux";
+import {
+  ICreateAttestationArgs,
+  IUpdateAttestationArgs,
+} from "../../../services/attestations/attestations.interface";
 import {
   useCreateAttestationMutation,
   useUpdateAttestationMutation,
@@ -30,7 +34,7 @@ const AddAttestationModal: FC<AddAttestationModalProps> = ({
   const [updateAttestationAPI, { isLoading: isUpdateAttestationLoading }] =
     useUpdateAttestationMutation();
 
-  const createAttestation = (body: any) => {
+  const createAttestation = (body: ICreateAttestationArgs) => {
     createAttestationAPI(body)
       .unwrap()
       .then((payload) => {
@@ -44,7 +48,7 @@ const AddAttestationModal: FC<AddAttestationModalProps> = ({
       );
   };
 
-  const updateAttestation = (body: any) => {
+  const updateAttestation = (body: IUpdateAttestationArgs) => {
     updateAttestationAPI(body)
       .unwrap()
       .then((payload) => {
@@ -93,4 +97,8 @@ const AddAttestationModal: FC<AddAttestationModalProps> = ({
   );
 };
 
-export default AddAttestationModal;
+export default memo(AddAttestationModal);
+
+AddAttestationModal.defaultProps = {
+  updateMode: false,
+};

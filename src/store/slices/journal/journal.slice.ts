@@ -1,7 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import _ from "lodash";
 import { LECTURE } from "../../../constants/lessons";
+import { IAnnotation } from "../../../models/IAnnotation";
 import { IAttestation } from "../../../models/IAttestation";
+import { IDelete } from "../../../models/IDelete";
 import { IDictionary } from "../../../models/IDictionary";
 import { IJournalFullInfo } from "../../../models/IJournalFullInfo";
 import { ILesson } from "../../../models/ILesson";
@@ -10,10 +12,15 @@ import { IStudentSubgroup } from "../../../models/IStudentSubgroup";
 import { ISubgroup } from "../../../models/ISubgroup";
 import { IVisit } from "../../../models/IVisit";
 import { sortLessonsByDate } from "../../../utils/general";
-import { IStudentSubgroupAction } from "./journal.interface";
+import {
+  IJournalState,
+  IStudentSubgroupAction,
+  IVisitInProgress,
+} from "./journal.interface";
 
-const initialState: IJournalFullInfo = {
+const initialState: IJournalState = {
   id: -1,
+  annotations: [],
   attestations: [],
   control: {} as IDictionary,
   discipline: {} as IDictionary,
@@ -29,12 +36,21 @@ const initialState: IJournalFullInfo = {
   students: [],
   subgroups: [],
   visits: [],
+  visitsInProgress: [],
 };
 
 export const journalSlice = createSlice({
   name: "journal",
   initialState,
   reducers: {
+    addAnnotationAction(state, action: PayloadAction<IAnnotation>) {
+      const annotations = _.cloneDeep(state.annotations);
+
+      annotations.push(action.payload);
+
+      state.annotations = annotations;
+    },
+
     addAttestationAction(state, action: PayloadAction<IAttestation>) {
       const attestations = _.cloneDeep(state.attestations);
 
@@ -75,56 +91,47 @@ export const journalSlice = createSlice({
       state.lessons = [..._.cloneDeep(state.lessons), ...action.payload];
     },
 
-    startLessonAction(state, action: PayloadAction<IStartLesson>) {
-      const lessons = _.cloneDeep(state.lessons);
+    addVisitInProgressAction(state, action: PayloadAction<IVisitInProgress>) {
+      state.visitsInProgress = [
+        ..._.cloneDeep(state.visitsInProgress),
+        action.payload,
+      ];
+    },
 
-      for (let i = 0; i < lessons.length; i++) {
-        if (lessons[i].id === action.payload.lessonId) {
-          lessons[i].conducted = true;
-          break;
-        }
-      }
-
-      state.lessons = lessons;
-      state.visits = [..._.cloneDeep(state.visits), ...action.payload.visits];
+    updateAnnotationAction(state, action: PayloadAction<IAnnotation>) {
+      state.annotations = _.cloneDeep(state.annotations).map((annotation) =>
+        annotation.id === action.payload.id ? action.payload : annotation
+      );
     },
 
     updateAttestationAction(state, action: PayloadAction<IAttestation>) {
-      state.attestations = _.cloneDeep(state.attestations).map(
-        (attestation) => {
-          if (attestation.id === action.payload.id) {
-            return action.payload;
-          }
-
-          return attestation;
-        }
+      state.attestations = _.cloneDeep(state.attestations).map((attestation) =>
+        attestation.id === action.payload.id ? action.payload : attestation
       );
     },
 
     updateLessonAction(state, action: PayloadAction<ILesson>) {
       state.lessons = _.cloneDeep(state.lessons)
+        .map((lesson) =>
+          lesson.id === action.payload.id ? action.payload : lesson
+        )
+        .sort(sortLessonsByDate);
+    },
+
+    updateManyLessonsAction(state, action: PayloadAction<ILesson[]>) {
+      state.lessons = _.cloneDeep(state.lessons)
         .map((lesson) => {
-          if (lesson.id === action.payload.id) {
-            return action.payload;
+          const foundLesson = action.payload.find(
+            (updatedLesson) => updatedLesson.id === lesson.id
+          );
+
+          if (foundLesson) {
+            return foundLesson;
           }
 
           return lesson;
         })
         .sort(sortLessonsByDate);
-    },
-
-    updateManyLessonsAction(state, action: PayloadAction<ILesson[]>) {
-      state.lessons = _.cloneDeep(state.lessons).map((lesson) => {
-        const foundLesson = action.payload.find(
-          (updatedLesson) => updatedLesson.id === lesson.id
-        );
-
-        if (foundLesson) {
-          return foundLesson;
-        }
-
-        return lesson;
-      });
     },
 
     updateSubgroupStudentAction(
@@ -177,51 +184,69 @@ export const journalSlice = createSlice({
       state.visits = visits;
     },
 
-    deleteAttestationAction(state, action: PayloadAction<number>) {
+    deleteAnnotationAction(state, action: PayloadAction<IDelete>) {
+      state.annotations = _.cloneDeep(state.annotations).filter(
+        (annotation) => annotation.id !== action.payload.id
+      );
+    },
+
+    deleteAttestationAction(state, action: PayloadAction<IDelete>) {
       state.attestations = _.cloneDeep(state.attestations).filter(
-        (attestation) => attestation.id !== action.payload
+        (attestation) => attestation.id !== action.payload.id
       );
     },
 
-    deleteLessonAction(state, action: PayloadAction<number>) {
+    deleteLessonAction(state, action: PayloadAction<IDelete>) {
       state.lessons = state.lessons.filter(
-        (lesson) => lesson.id !== action.payload
+        (lesson) => lesson.id !== action.payload.id
       );
     },
 
-    deleteSubgroupAction(state, action: PayloadAction<number>) {
+    deleteSubgroupAction(state, action: PayloadAction<IDelete>) {
       const deletedLessons = state.lessons.filter((lesson) =>
-        lesson.subgroups.every((subgroup) => subgroup.id === action.payload)
+        lesson.subgroups.every((subgroup) => subgroup.id === action.payload.id)
       );
 
-      const deletedPoints = state.points.filter((point) =>
-        deletedLessons.some((lesson) => lesson.id === point.lessonId)
+      const deletedAnnotations = state.annotations.filter((annotation) =>
+        deletedLessons.some((lesson) => lesson.id === annotation.lessonId)
       );
 
       const deletedVisits = state.visits.filter((visit) =>
         deletedLessons.some((lesson) => lesson.id === visit.lessonId)
       );
 
+      state.annotations = _.cloneDeep(state.annotations).filter((annotation) =>
+        deletedAnnotations.every(
+          (deletedAnnotation) => deletedAnnotation.id !== annotation.id
+        )
+      );
       state.lessons = _.cloneDeep(state.lessons).filter((lesson) =>
         deletedLessons.every((deletedLesson) => deletedLesson.id !== lesson.id)
       );
-      state.points = _.cloneDeep(state.points).filter((point) =>
-        deletedPoints.every((deletedPoint) => deletedPoint.id !== point.id)
-      );
       state.visits = _.cloneDeep(state.visits).filter((visit) =>
         deletedVisits.every(
-          (deletedVisit) =>
-            deletedVisit.lessonId !== visit.lessonId &&
-            deletedVisit.studentId !== visit.studentId
+          (deletedVisit) => deletedVisit.lessonId !== visit.lessonId
         )
       );
       state.subgroups = state.subgroups.filter(
-        (subgroup) => subgroup.id !== action.payload
+        (subgroup) => subgroup.id !== action.payload.id
+      );
+    },
+
+    deleteVisitInProgressAction(
+      state,
+      action: PayloadAction<IVisitInProgress>
+    ) {
+      state.visitsInProgress = _.cloneDeep(state.visitsInProgress).filter(
+        (visitInProgress) =>
+          visitInProgress.lessonId !== action.payload.lessonId &&
+          visitInProgress.studentId !== action.payload.studentId
       );
     },
 
     setJournalAction(state, action: PayloadAction<IJournalFullInfo>) {
       state.id = action.payload.id;
+      state.annotations = action.payload.annotations;
       state.attestations = action.payload.attestations;
       state.control = action.payload.control;
       state.discipline = action.payload.discipline;
@@ -256,25 +281,44 @@ export const journalSlice = createSlice({
 
       state.students = students;
     },
+
+    startLessonAction(state, action: PayloadAction<IStartLesson>) {
+      const lessons = _.cloneDeep(state.lessons);
+
+      for (let i = 0; i < lessons.length; i++) {
+        if (lessons[i].id === action.payload.lessonId) {
+          lessons[i].conducted = true;
+          break;
+        }
+      }
+
+      state.lessons = lessons;
+      state.visits = [..._.cloneDeep(state.visits), ...action.payload.visits];
+    },
   },
 });
 
 export const {
+  addAnnotationAction,
   addAttestationAction,
   addLessonAction,
   addManyLessonsAction,
   addSubgroupAction,
   addManySubgroupLessonsAction,
-  startLessonAction,
+  addVisitInProgressAction,
+  updateAnnotationAction,
   updateAttestationAction,
   updateLessonAction,
   updateManyLessonsAction,
   updateSubgroupStudentAction,
   updateManySubgroupsStudentsAction,
   updateVisitAction,
+  deleteAnnotationAction,
   deleteAttestationAction,
   deleteLessonAction,
   deleteSubgroupAction,
+  deleteVisitInProgressAction,
   setJournalAction,
   setStudentSubgroupAction,
+  startLessonAction,
 } = journalSlice.actions;

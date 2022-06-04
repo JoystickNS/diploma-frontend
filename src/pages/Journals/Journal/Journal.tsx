@@ -3,9 +3,10 @@ import {
   Checkbox,
   Col,
   Form,
-  FormInstance,
+  Input,
   message,
   Modal,
+  Popover,
   Row,
   Space,
   Spin,
@@ -14,10 +15,10 @@ import {
   Tooltip,
 } from "antd";
 import moment from "moment";
-import { createContext, FC, useEffect, useMemo, useState } from "react";
+import { FC, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import AddItemButton from "../../../components/simple/AddItemButton/AddItemButton";
-import DeleteButton from "../../../components/smart/DeleteButton/DeleteButton";
+import DeleteButton from "../../../components/simple/DeleteButton/DeleteButton";
 import { useGetJournalFullInfoQuery } from "../../../services/journals/journals.service";
 import {
   useDeleteLessonMutation,
@@ -28,44 +29,34 @@ import {
   IStudentPoint,
   IStudentVisit,
 } from "./Journal.interface";
-import EditButton from "../../../components/smart/EditButton/EditButton";
+import EditButton from "../../../components/simple/EditButton/EditButton";
 import { useForm } from "antd/lib/form/Form";
-import { IAttestation } from "../../../models/IAttestation";
 import { useDeleteAttestationMutation } from "../../../services/attestations/attestations.service";
-import { ILesson } from "../../../models/ILesson";
 import EditSubgroups from "../../../components/smart/EditSubgroups/EditSubgroups";
 import { useDispatch } from "react-redux";
 import {
+  deleteAnnotationAction,
   deleteAttestationAction,
   deleteLessonAction,
   setJournalAction,
   startLessonAction,
   updateManySubgroupsStudentsAction,
+  updateVisitAction,
 } from "../../../store/slices/journal/journal.slice";
 import { useAppSelector } from "../../../hooks/redux";
 import { LECTURE, PRACTICE } from "../../../constants/lessons";
-import { ISubgroup } from "../../../models/ISubgroup";
 import AddManyLessonsForm from "../../../components/smart/AddManyLessonsForm/AddManyLessonsForm";
 import AddLessonModal from "../../../components/smart/AddLessonModal/AddLessonModal";
 import AddAttestationModal from "../../../components/smart/AddAttestationModal/AddAttestationModal";
 import { useCreateSubgroupStudentMutation } from "../../../services/subgroups/subgroups.service";
 import { IStudentSubgroup } from "../../../models/IStudentSubgroup";
 import _ from "lodash";
-import StartButton from "../../../components/smart/StartButton/StartButton";
+import StartButton from "../../../components/simple/StartButton/StartButton";
+import { useUpdateVisitMutation } from "../../../services/visits/visits.service";
+import OkButton from "../../../components/simple/OkButton/OkButton";
 import { CheckboxChangeEvent } from "antd/lib/checkbox";
-
-const EditableContext = createContext<FormInstance<any> | null>(null);
-
-const EditableRow: FC = ({ ...props }) => {
-  const [form] = Form.useForm();
-  return (
-    <Form form={form} component={false}>
-      <EditableContext.Provider value={form}>
-        <tr {...props} />
-      </EditableContext.Provider>
-    </Form>
-  );
-};
+import AddAnnotationModal from "../../../components/smart/AddAnnotationModal/AddAnnotationModal";
+import { useDeleteAnnotationMutation } from "../../../services/annotations/annotations.service";
 
 const Journal: FC = () => {
   const { journalId } = useParams();
@@ -85,11 +76,17 @@ const Journal: FC = () => {
   ] = useCreateSubgroupStudentMutation();
   const [startLessonAPI, { isLoading: isStartLessonLoading }] =
     useStartLessonMutation();
+  const [updateVisitAPI, { isLoading: isUpdateVisitLoading }] =
+    useUpdateVisitMutation();
   const [deleteLessonAPI, { isLoading: isDeleteLessonLoading }] =
     useDeleteLessonMutation();
   const [deleteAttestationAPI, { isLoading: isDeleteAttestationLoading }] =
     useDeleteAttestationMutation();
+  const [deleteAnnotationAPI, { isLoading: isDeleteAnnotationLoading }] =
+    useDeleteAnnotationMutation();
 
+  const [isAddAnnotationModalVisible, setIsAddAnnotationModalVisible] =
+    useState<boolean>(false);
   const [isAddOneLessonModalVisible, setIsAddLessonModalVisible] =
     useState<boolean>(false);
   const [isAddLessonsModalVisible, setIsAddLessonsModalVisible] =
@@ -99,33 +96,124 @@ const Journal: FC = () => {
   const [isEditSubgroupsModalVisible, setIsEditSubgroupsModalVisible] =
     useState<boolean>(false);
 
+  const [isAnnotationEditing, setIsAnnotationEditing] =
+    useState<boolean>(false);
   const [isAttestationEditing, setIsAttestationEditing] =
     useState<boolean>(false);
   const [isLessonEditing, setIsLessonEditing] = useState<boolean>(false);
+  const [isJournalLoaded, setIsJournalLoaded] = useState<boolean>(false);
+  const [isShowTodayLessons, setIsShowTodayLessons] = useState<boolean>(false);
+
+  const [endEditingDataIndex, setEndEditingDataIndex] = useState<string>("");
 
   const [isSomeStudentWithoutSubgroup, setIsSomeStudentWithoutSubgroup] =
     useState<boolean>(false);
 
+  // const [visitsInProgress, setVisitsInProgress] = useState<
+  //   {
+  //     lessonId: number;
+  //     studentId: number;
+  //   }[]
+  // >([]);
+
+  console.log("JOURNAL RENDER");
+
+  useEffect(() => {
+    if (endEditingDataIndex) {
+      setEndEditingDataIndex("");
+    }
+  }, [endEditingDataIndex]);
+
+  const [editingDataIndex, setEditingDataIndex] = useState<string>("");
+
+  const [annotationForm] = useForm();
   const [attestationEditForm] = useForm();
   const [lessonForm] = useForm();
 
-  interface a {
+  const loading =
+    isCreateSubgroupStudentLoading ||
+    isJournalFullInfoLoading ||
+    isDeleteLessonLoading ||
+    isDeleteAttestationLoading ||
+    isStartLessonLoading ||
+    // isUpdateVisitLoading ||
+    isDeleteAnnotationLoading;
+
+  const isEditing = (dataIndex: string) => dataIndex === editingDataIndex;
+
+  interface EditableCellProps extends React.HTMLAttributes<HTMLElement> {
+    isEditing: boolean;
     dataIndex: string;
-    record: any;
+    record: IJournalTable;
+    lessonId?: number;
+    annotationId?: number;
+    lessonConducted?: boolean;
+    children: React.ReactNode;
   }
 
-  const EditableCell: React.FC<a> = ({
-    children,
+  const EditableCell: React.FC<EditableCellProps> = ({
+    isEditing,
     dataIndex,
     record,
+    lessonId,
+    annotationId,
+    lessonConducted,
+    children,
     ...restProps
   }) => {
+    console.log("CELL RENDER");
     let childNode = children;
 
-    if (dataIndex?.includes("isAbsent")) {
-      const isAbsent = record[dataIndex];
-      if (isAbsent?.isAbsent === false) {
-        childNode = "н";
+    if (lessonId) {
+      const visit = journal.visits.find(
+        (visit) => visit.lessonId === lessonId && visit.studentId === record.key
+      );
+
+      if (isEditing) {
+        childNode = visit && (
+          <Checkbox
+            checked={record[`${lessonId} isAbsent`]?.isAbsent}
+            disabled={journal.visitsInProgress.some(
+              (visitInProgress) =>
+                visit.lessonId === visitInProgress.lessonId &&
+                visit.studentId === visitInProgress.studentId
+            )}
+            onChange={(e: CheckboxChangeEvent) =>
+              handleAbsentChange(e.target.checked, lessonId, record.key)
+            }
+          />
+        );
+      } else {
+        if (visit) {
+          childNode = record[`${lessonId} isAbsent`]?.isAbsent && "H";
+        }
+      }
+    }
+
+    if (annotationId) {
+      const point = journal.points.find(
+        (point) =>
+          point.annotationId === annotationId && point.studentId === record.key
+      );
+
+      const annotation = journal.annotations.find(
+        (annotation) => annotation.id === annotationId
+      );
+
+      if (isEditing) {
+        childNode = annotation && (
+          <Form.Item name="points" style={{ margin: 0 }}>
+            <Input />
+          </Form.Item>
+        );
+      } else {
+        if (annotation) {
+          if (point) {
+            childNode = record[`${annotationId} points`].numberOfPoints;
+          } else if (lessonConducted) {
+            childNode = <AddItemButton />;
+          }
+        }
       }
     }
 
@@ -135,6 +223,7 @@ const Journal: FC = () => {
   useEffect(() => {
     if (isJournalFullInfoSuccess) {
       dispatch(setJournalAction(JournalFullInfo));
+      setIsJournalLoaded(true);
     }
   }, [isJournalFullInfoLoading]);
 
@@ -144,6 +233,14 @@ const Journal: FC = () => {
       const studentsWithoutSubgroup = journal.students.filter(
         (student) => !student.subgroup
       );
+
+      if (studentsWithoutSubgroup.length === 0) {
+        if (isSomeStudentWithoutSubgroup) {
+          setIsSomeStudentWithoutSubgroup(false);
+        }
+
+        return;
+      }
 
       if (journal.subgroups.length === 1) {
         await Promise.all(
@@ -164,11 +261,25 @@ const Journal: FC = () => {
         if (result.length > 0) {
           dispatch(updateManySubgroupsStudentsAction(result));
         }
-      } else if (isSomeStudentWithoutSubgroup) {
-        setIsSomeStudentWithoutSubgroup(false);
+
+        if (isSomeStudentWithoutSubgroup) {
+          setIsSomeStudentWithoutSubgroup(false);
+        }
+      } else if (!isSomeStudentWithoutSubgroup) {
+        setIsSomeStudentWithoutSubgroup(true);
       }
     })();
   }, [journal.students, journal.subgroups]);
+
+  useEffect(() => {}, [journal]);
+
+  const showTodayJournal = useMemo(() => {
+    return isShowTodayLessons
+      ? journal.lessons.filter((lesson) =>
+          moment(lesson.date).isSame(moment(), "d")
+        )
+      : {};
+  }, [isShowTodayLessons]);
 
   const handleAddLesson = () => {
     lessonForm.setFieldsValue({
@@ -177,172 +288,66 @@ const Journal: FC = () => {
       lessonTopic: undefined,
       date: moment(),
     });
-    setIsLessonEditing(false);
-    setIsAddLessonModalVisible(true);
-  };
 
-  const handleEditLesson = (lesson: ILesson) => {
-    lessonForm.setFieldsValue({
-      lessonId: lesson.id,
-      subgroupIds: lesson.subgroups.length === 1 ? lesson.subgroups[0].id : 0,
-      lessonTypeId: lesson.lessonType.id,
-      lessonTopic: lesson.lessonTopic?.name,
-      date: moment(lesson.date),
-    });
-    setIsLessonEditing(true);
-    setIsAddLessonModalVisible(true);
-  };
+    if (isLessonEditing) {
+      setIsLessonEditing(false);
+    }
 
-  const handleDeleteLesson = (lessonId: number, subgroups: ISubgroup[]) => {
-    deleteLessonAPI({
-      lessonId,
-      journalId: journal.id,
-      subgroupId: subgroups[0].id,
-    })
-      .unwrap()
-      .then((payload) => dispatch(deleteLessonAction(payload.id)))
-      .catch(() => message.error("Произошла ошибка при удалении занятия"));
+    setIsAddLessonModalVisible(true);
   };
 
   const handleAddAttestation = () => {
     attestationEditForm.setFieldsValue({
-      workType: undefined,
+      workTypeId: undefined,
       workTopic: undefined,
       maximumPoints: undefined,
     });
-    setIsAttestationEditing(false);
+
+    if (isAttestationEditing) {
+      setIsAttestationEditing(false);
+    }
+
     setIsAddAttestationModalVisible(true);
   };
 
-  const handleEditAttestation = (attestation: IAttestation) => {
-    attestationEditForm.setFieldsValue({
-      attestationId: attestation.id,
-      workTypeId: attestation.workType?.id,
-      workTopic: attestation.workTopic,
-      maximumPoints: attestation.maximumPoints,
-    });
-    setIsAttestationEditing(true);
-    setIsAddAttestationModalVisible(true);
-  };
+  const handleAddPoints = () => {};
 
-  const handleDeleteAttestation = (attestationId: number) => {
-    deleteAttestationAPI({ journalId: journal.id, attestationId })
-      .unwrap()
-      .then((payload) => dispatch(deleteAttestationAction(payload.id)))
-      .catch(() => message.error("Произошла ошибка при удалении аттестации"));
-  };
+  const handleEditPoints = () => {};
 
-  const handleStartLesson = (lesson: ILesson) => {
-    startLessonAPI({
-      journalId: journal.id,
-      lessonId: lesson.id,
-      subgroupIds: lesson.subgroups.map((subgroup) => subgroup.id),
-    })
-      .unwrap()
-      .then((payload) => dispatch(startLessonAction(payload)))
-      .catch(() =>
-        message.error("Произошла ошибка при попытке начать занятие")
-      );
-  };
+  const handleDeletePoints = () => {};
 
-  const handleAbsentChange = (
+  const handleAbsentChange = async (
     value: boolean,
     lessonId: number,
     studentId: number
   ) => {
-    console.log(value);
-    console.log(lessonId);
-    console.log(studentId);
+    // setVisitsInProgress([
+    //   ..._.cloneDeep(visitsInProgress),
+    //   { lessonId, studentId },
+    // ]);
+    // dispatch(addVisitInProgressAction({ lessonId, studentId }));
+
+    updateVisitAPI({
+      isAbsent: value,
+      journalId: journal.id,
+      lessonId,
+      studentId,
+    })
+      .unwrap()
+      .then((payload) => {
+        // dispatch(deleteVisitInProgressAction({ lessonId, studentId }));
+        dispatch(updateVisitAction(payload));
+      })
+      .catch(() => message.error("Произошла ошибка при изменении посещения"));
+    // .finally(() => {
+    //   setVisitsInProgress(
+    //     _.cloneDeep(visitsInProgress).filter((visit) => {
+    //       console.log(visit);
+    //       return visit.lessonId !== lessonId && visit.studentId !== studentId;
+    //     })
+    //   );
+    // });
   };
-
-  // const EditableJournalHeaderCell: React.FC<EditableJournalHeaderCellProps> = ({
-  //   id,
-  //   title,
-  //   isEditable,
-  //   children,
-  //   dataIndex,
-  //   lessonType,
-  //   ...restProps
-  // }) => {
-  //   const [isEditing, setIsEditing] = useState(false);
-  //   const form = useContext(EditableContext)!;
-
-  //   const toggleEdit = () => {
-  //     setIsEditing(!isEditing);
-  //     form.setFieldsValue({ [dataIndex]: title });
-  //   };
-
-  //   const save = async () => {
-  //     try {
-  //       const values = await form.validateFields();
-  //       let newValue = values.lessonTopic || values.workTopic;
-
-  //       toggleEdit();
-  //       newValue = newValue === undefined ? null : newValue;
-
-  //       if (newValue === title) {
-  //         return;
-  //       }
-
-  //       updateLessonAPI({ id, topic: newValue })
-  //         .unwrap()
-  //         .catch(() => message.error("Произошла ошибка при изменении темы"));
-  //     } catch (errInfo) {}
-  //   };
-
-  //   let options: any[] = [];
-  //   console.log(lessonType);
-  //   switch (lessonType) {
-  //     case LECTURE:
-  //       options = calcAutocompleteOptions(journal.lessonTopics, LECTURE);
-  //       break;
-
-  //     case PRACTICE:
-  //       options = calcAutocompleteOptions(journal.lessonTopics, PRACTICE);
-  //       break;
-
-  //     case LABORATORY:
-  //       options = calcAutocompleteOptions(journal.lessonTopics, LABORATORY);
-  //       break;
-  //   }
-
-  //   console.log(options);
-
-  //   let childNode = children;
-  //   let inputNode = (
-  //     <AutoComplete
-  //       autoFocus
-  //       size="small"
-  //       style={{ width: "100%" }}
-  //       placeholder="Введите тему занятия"
-  //       onBlur={save}
-  //       options={options}
-  //       filterOption={(inputValue, option) =>
-  //         option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-  //       }
-  //     />
-  //   );
-
-  //   if (isEditable) {
-  //     childNode = isEditing ? (
-  //       <Form.Item
-  //         name={dataIndex}
-  //         noStyle
-  //         rules={[rules.max(250, "Введите не более 250 символов")]}
-  //       >
-  //         {inputNode}
-  //       </Form.Item>
-  //     ) : (
-  //       <Popover content={title}>
-  //         <div className="editable-header-cell-value-wrap" onClick={toggleEdit}>
-  //           {children}
-  //         </div>
-  //       </Popover>
-  //     );
-  //   }
-
-  //   return <th {...restProps}>{childNode}</th>;
-  // };
 
   const dataSource: IJournalTable[] = useMemo(
     () =>
@@ -361,22 +366,22 @@ const Journal: FC = () => {
             (visit) =>
               visit.studentId === student.id && visit.lessonId === lesson.id
           );
-          const studentPoint = journal.points.find(
-            (point) =>
-              point.studentId === student.id && point.lessonId === lesson.id
-          );
+          // const studentPoint = journal.points.find(
+          //   (point) =>
+          //     point.studentId === student.id && point.lessonId === lesson.id
+          // );
           if (studentVisit) {
             studentVisits.push({
               ...studentVisit,
               lessonId: lesson.id,
             });
           }
-          if (studentPoint) {
-            studentPoints.push({
-              ...studentPoint,
-              lessonId: lesson.id,
-            });
-          }
+          // if (studentPoint) {
+          //   studentPoints.push({
+          //     ...studentPoint,
+          //     lessonId: lesson.id,
+          //   });
+          // }
         });
 
         studentVisits.forEach(
@@ -394,8 +399,6 @@ const Journal: FC = () => {
     [journal]
   );
 
-  console.log(dataSource);
-
   const columns: any[] = [];
 
   columns.push({
@@ -404,7 +407,6 @@ const Journal: FC = () => {
     fixed: "left",
     align: "center",
     width: "250px",
-    isEditable: true,
     sorter: (a: any, b: any) => (a.studentName > b.studentName ? 1 : -1),
     render: (text: string, record: IJournalTable) => {
       const isSubgroup = record.subgroup || journal.subgroups.length === 1;
@@ -413,180 +415,411 @@ const Journal: FC = () => {
           {isSubgroup ? (
             text
           ) : (
-            <Tooltip
-              title={
-                <div
-                  style={{ cursor: "pointer" }}
-                  onClick={() => setIsEditSubgroupsModalVisible(true)}
-                >
-                  Не назначена подгруппа
-                </div>
-              }
-              color="black"
-            >
-              {text}
+            <Tooltip title="Не назначена подгруппа" color="black">
+              <div
+                style={{ cursor: "pointer" }}
+                onClick={() => setIsEditSubgroupsModalVisible(true)}
+              >
+                {text}
+              </div>
             </Tooltip>
           )}
         </div>
       );
     },
+    shouldCellUpdate: (prevRecord: IJournalTable, record: IJournalTable) =>
+      prevRecord.studentName !== record.studentName,
   });
+
+  const lessonChildren = useMemo(() => {
+    return journal.lessons.map((lesson) => {
+      const handleAddAnnotation = () => {
+        annotationForm.setFieldsValue({
+          lessonId: lesson.id,
+          name: undefined,
+        });
+
+        if (isAnnotationEditing) {
+          setIsAnnotationEditing(false);
+        }
+
+        setIsAddAnnotationModalVisible(true);
+      };
+
+      const handleStartLesson = () => {
+        if (isSomeStudentWithoutSubgroup) {
+          message.error(
+            "В группе есть студент, которому не назначена подгруппа!"
+          );
+          return;
+        }
+
+        startLessonAPI({
+          journalId: journal.id,
+          lessonId: lesson.id,
+          subgroupIds: lesson.subgroups.map((subgroup) => subgroup.id),
+        })
+          .unwrap()
+          .then((payload) => {
+            dispatch(startLessonAction(payload));
+            setEditingDataIndex(`${lesson.id} isAbsent`);
+          })
+          .catch(() =>
+            message.error("Произошла ошибка при попытке начать занятие")
+          );
+      };
+
+      const handleEditLesson = () => {
+        lessonForm.setFieldsValue({
+          lessonId: lesson.id,
+          subgroupIds:
+            lesson.subgroups.length === 1 ? lesson.subgroups[0].id : 0,
+          lessonTypeId: lesson.lessonType.id,
+          lessonTopic: lesson.lessonTopic?.name,
+          date: moment(lesson.date),
+        });
+
+        if (!isLessonEditing) {
+          setIsLessonEditing(true);
+        }
+
+        setIsAddLessonModalVisible(true);
+      };
+
+      const handleDeleteLesson = () => {
+        deleteLessonAPI({
+          lessonId: lesson.id,
+          journalId: journal.id,
+          subgroupId: lesson.subgroups[0].id,
+        })
+          .unwrap()
+          .then((payload) => dispatch(deleteLessonAction(payload)))
+          .catch(() => message.error("Произошла ошибка при удалении занятия"));
+      };
+
+      const annotations = journal.annotations.filter(
+        (annotation) => annotation.lessonId === lesson.id
+      );
+
+      return {
+        title: () => {
+          const date = moment(lesson.date);
+          const dayName = date.format("ddd");
+          const today = moment();
+          const lessonType =
+            lesson.lessonType.name === LECTURE
+              ? "Лек."
+              : lesson.lessonType.name === PRACTICE
+              ? "Пр."
+              : "Лаб.";
+
+          return (
+            <Row
+              justify="space-between"
+              wrap={false}
+              align="middle"
+              style={{
+                color: date.isSame(today, "date") ? "green" : undefined,
+              }}
+            >
+              <Space>
+                {`${date.format("DD.MM.YYYY")} (${
+                  dayName[0].toUpperCase() + dayName.slice(1)
+                })`}
+                <Tag
+                  color={
+                    lessonType === "Лек."
+                      ? "orange"
+                      : lessonType === "Пр."
+                      ? "blue"
+                      : "cyan"
+                  }
+                  style={{ margin: 0 }}
+                >
+                  {lessonType}
+                </Tag>
+                <EditButton
+                  disabled={!!editingDataIndex}
+                  tooltipText="Редактировать занятие"
+                  onClick={handleEditLesson}
+                />
+                <DeleteButton
+                  disabled={!!editingDataIndex}
+                  onConfirm={handleDeleteLesson}
+                />
+                {!lesson.conducted ? (
+                  <StartButton
+                    disabled={!!editingDataIndex}
+                    buttonSize={18}
+                    tooltipText="Начать занятие"
+                    onClick={handleStartLesson}
+                  />
+                ) : undefined}
+              </Space>
+              <AddItemButton
+                disabled={!!editingDataIndex}
+                tooltipText="Добавить колонку на эту дату"
+                onClick={handleAddAnnotation}
+              />
+            </Row>
+          );
+        },
+        children: [
+          {
+            title: () => (
+              <Popover
+                content={lesson.lessonTopic?.name || "Тема занятия отсутствует"}
+              >
+                <div style={{ overflow: "hidden", height: "24px" }}>
+                  {lesson.lessonTopic?.name || "Тема занятия отсутствует"}
+                </div>
+              </Popover>
+            ),
+            align: "center",
+            dataIndex: "lessonTopic",
+            children: [
+              {
+                title: () => {
+                  const dataIndex = `${lesson.id} isAbsent`;
+
+                  const handleEditVisit = () => {
+                    setEditingDataIndex(dataIndex);
+                  };
+
+                  const handleOkVisit = () => {
+                    setEditingDataIndex("");
+                    setEndEditingDataIndex(dataIndex);
+                  };
+
+                  const isSomeColumnEditing =
+                    !!editingDataIndex && editingDataIndex !== dataIndex;
+                  return (
+                    <Space>
+                      <div>Посещения</div>
+                      {lesson.conducted &&
+                        (editingDataIndex !== dataIndex ? (
+                          <EditButton
+                            disabled={isSomeColumnEditing}
+                            tooltipText="Редактировать посещения"
+                            onClick={handleEditVisit}
+                          />
+                        ) : (
+                          <OkButton
+                            tooltipText="Подтвердить"
+                            buttonSize={20}
+                            onClick={handleOkVisit}
+                          />
+                        ))}
+                    </Space>
+                  );
+                },
+                dataIndex: `${lesson.id} isAbsent`,
+                align: "center",
+                width: annotations.length === 0 ? "300px" : "150px",
+                shouldCellUpdate: (
+                  prevRecord: IJournalTable,
+                  record: IJournalTable
+                ) => {
+                  const dataIndex = `${lesson.id} isAbsent`;
+
+                  return (
+                    prevRecord[dataIndex]?.isAbsent !==
+                      record[dataIndex]?.isAbsent ||
+                    isEditing(dataIndex) ||
+                    endEditingDataIndex === dataIndex
+                  );
+                },
+                onCell: (record: IJournalTable): any => ({
+                  isEditing: isEditing(`${lesson.id} isAbsent`),
+                  dataIndex: `${lesson.id} isAbsent`,
+                  lessonId: lesson.id,
+                  record,
+                }),
+              },
+              ...annotations.map((annotation) => ({
+                title: () => {
+                  const handleEditAnnotation = () => {
+                    annotationForm.setFieldsValue({
+                      annotationId: annotation.id,
+                      lessonId: annotation.lessonId,
+                      name: annotation.name,
+                    });
+
+                    if (!isAnnotationEditing) {
+                      setIsAnnotationEditing(true);
+                    }
+
+                    setIsAddAnnotationModalVisible(true);
+                  };
+
+                  const handleDeleteAnnotation = () => {
+                    deleteAnnotationAPI({
+                      annotationId: annotation.id,
+                      journalId: journal.id,
+                      lessonId: annotation.lessonId,
+                    })
+                      .unwrap()
+                      .then((payload) =>
+                        dispatch(deleteAnnotationAction(payload))
+                      )
+                      .catch(() =>
+                        message.error("Произошла ошибка при удалении пояснения")
+                      );
+                  };
+
+                  const handleEditPoints = () => {
+                    setEditingDataIndex(`${annotation.id} points`);
+                  };
+
+                  const handleOkPoints = () => {
+                    setEditingDataIndex("");
+                  };
+
+                  return (
+                    <Space>
+                      <Popover
+                        content={
+                          <Space>
+                            {annotation.name || "Пояснение отсутствует"}
+                            <EditButton
+                              disabled={!!editingDataIndex}
+                              tooltipText="Редактировать пояснение"
+                              onClick={handleEditAnnotation}
+                            />
+                          </Space>
+                        }
+                      >
+                        <div
+                          style={{
+                            overflow: "hidden",
+                            height: "24px",
+                            textAlign: "left",
+                            width: "100px",
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {annotation.name || "Пояснение отсутствует"}
+                        </div>
+                      </Popover>
+                      {editingDataIndex !== `${annotation.id} points` ? (
+                        <>
+                          {lesson.conducted && (
+                            <EditButton
+                              tooltipText="Редактировать баллы"
+                              onClick={handleEditPoints}
+                            />
+                          )}
+
+                          <DeleteButton
+                            disabled={!!editingDataIndex}
+                            onConfirm={handleDeleteAnnotation}
+                          />
+                        </>
+                      ) : (
+                        <OkButton
+                          tooltipText="Подтвердить"
+                          buttonSize={20}
+                          onClick={handleOkPoints}
+                        />
+                      )}
+                    </Space>
+                  );
+                },
+                dataIndex: `${annotation.id} points`,
+                align: "center",
+                width: "200px",
+                onCell: (record: IJournalTable) => ({
+                  isEditing: isEditing(`${annotation.id} points`),
+                  dataIndex: `${annotation.id} points`,
+                  annotationId: annotation.id,
+                  lessonConducted: lesson.conducted,
+                  record,
+                }),
+              })),
+            ],
+          },
+        ],
+      };
+    });
+  }, [isJournalLoaded, editingDataIndex]);
 
   if (journal.lessons.length > 0) {
     columns.push({
       title: "Занятия",
       align: "center",
-      children: [
-        ...journal.lessons.map((lesson) => ({
-          title: () => {
-            const date = moment(lesson.date);
-            const dayName = date.format("ddd");
-            const today = moment();
-            const lessonType =
-              lesson.lessonType.name === LECTURE
-                ? "Лек."
-                : lesson.lessonType.name === PRACTICE
-                ? "Пр."
-                : "Лаб.";
-
-            return (
-              <Row
-                justify="space-between"
-                wrap={false}
-                align="middle"
-                style={{
-                  color: date.isSame(today, "date") ? "green" : undefined, // FIXME: green
-                }}
-              >
-                <Space>
-                  {`${date.format("DD.MM.YYYY")} (${
-                    dayName[0].toUpperCase() + dayName.slice(1)
-                  })`}
-                  <Tag
-                    color={
-                      lessonType === "Лек."
-                        ? "orange"
-                        : lessonType === "Пр."
-                        ? "blue"
-                        : "cyan"
-                    }
-                    style={{ margin: 0 }}
-                  >
-                    {lessonType}
-                  </Tag>
-                  <EditButton
-                    onClick={() => {
-                      handleEditLesson(lesson);
-                    }}
-                  />
-                  <DeleteButton
-                    onConfirm={() =>
-                      handleDeleteLesson(lesson.id, lesson.subgroups)
-                    }
-                  />
-                  {!lesson.conducted ? (
-                    <StartButton
-                      buttonSize={18}
-                      tooltipText="Начать занятие"
-                      onClick={() => handleStartLesson(lesson)}
-                    />
-                  ) : (
-                    <Button>РЕДАКТ</Button>
-                  )}
-                </Space>
-                <AddItemButton tooltipText="Добавить колонку на эту дату" />
-              </Row>
-            );
-          },
-          children: [
-            {
-              title: lesson.lessonTopic?.name || "Тема занятия отсутствует",
-              align: "center",
-              isEditable: true,
-              className: "editable-row",
-              dataIndex: "lessonTopic",
-              // onHeaderCell: (col: any) => ({
-              //   id: lesson.id,
-              //   title: col.title,
-              //   isEditable: col.isEditable,
-              //   dataIndex: col.dataIndex,
-              //   lessonType: lesson.lessonType.name,
-              // }),
-              children: [
-                {
-                  title: "Студент отсутствует",
-                  dataIndex: `${lesson.id} isAbsent`,
-                  align: "center",
-                  width: "300px",
-                  render: (text: string, record: IJournalTable) => {
-                    return lesson.conducted
-                      ? lesson.subgroups.find(
-                          (lessonSubgroup) =>
-                            lessonSubgroup.id === record.subgroup.id
-                        ) && (
-                          <Checkbox
-                            checked={record[`${lesson.id} isAbsent`]?.isAbsent}
-                            onChange={(e: CheckboxChangeEvent) =>
-                              handleAbsentChange(
-                                e.target.checked,
-                                lesson.id,
-                                record.key
-                              )
-                            }
-                          />
-                        )
-                      : record[`${lesson.id} isAbsent`]?.isAbsent && "H";
-                  },
-                },
-              ],
-            },
-          ],
-        })),
-      ],
+      children: lessonChildren,
     });
   }
 
-  if (
-    journal.attestations.filter((attestation) => attestation.workType !== null)
-      .length > 0
-  ) {
+  const attestations = journal.attestations.filter(
+    (attestation) => attestation.workType
+  );
+
+  const attestationsChildren = useMemo(() => {
+    return attestations.map((attestation) => {
+      return {
+        title: () => {
+          const handleEditAttestation = () => {
+            attestationEditForm.setFieldsValue({
+              attestationId: attestation.id,
+              workTypeId: attestation.workType?.id,
+              workTopic: attestation.workTopic,
+              maximumPoints: attestation.maximumPoints,
+            });
+
+            if (!isAttestationEditing) {
+              setIsAttestationEditing(true);
+            }
+
+            setIsAddAttestationModalVisible(true);
+          };
+
+          const handleDeleteAttestation = () => {
+            deleteAttestationAPI({
+              journalId: journal.id,
+              attestationId: attestation.id,
+            })
+              .unwrap()
+              .then((payload) => dispatch(deleteAttestationAction(payload)))
+              .catch(() =>
+                message.error("Произошла ошибка при удалении аттестации")
+              );
+          };
+
+          const title = attestation.maximumPoints
+            ? `${attestation.workType?.name} (макс. ${attestation.maximumPoints})`
+            : attestation.workType?.name;
+
+          return (
+            <Space>
+              {title}
+              <EditButton
+                tooltipText="Редактировать промежуточную аттестацию"
+                onClick={handleEditAttestation}
+              />
+              <DeleteButton onConfirm={handleDeleteAttestation} />
+            </Space>
+          );
+        },
+        align: "center",
+        children: [
+          {
+            title: attestation.workTopic
+              ? attestation.workTopic
+              : "Тема аттестации отсутствует",
+            align: "center",
+            width: "400px",
+          },
+        ],
+      };
+    });
+  }, [isJournalLoaded]);
+
+  if (attestations.length > 0) {
     columns.push({
       title: "Промежуточные аттестации",
       align: "center",
-      children: [
-        ...journal.attestations
-          .filter((attestation) => attestation.workType)
-          .map((attestation) => {
-            return {
-              title: () => {
-                const title = attestation.maximumPoints
-                  ? `${attestation.workType?.name} (макс. ${attestation.maximumPoints})`
-                  : attestation.workType?.name;
-                return (
-                  <Space>
-                    {title}
-                    <EditButton
-                      onClick={() => handleEditAttestation(attestation)}
-                    />
-                    <DeleteButton
-                      onConfirm={() => handleDeleteAttestation(attestation.id)}
-                    />
-                  </Space>
-                );
-              },
-              align: "center",
-              children: [
-                {
-                  title: attestation.workTopic
-                    ? attestation.workTopic
-                    : "Тема аттестации отсутствует",
-                  align: "center",
-                  width: "400px",
-                },
-              ],
-            };
-          }),
-      ],
+      children: attestationsChildren,
     });
   }
 
@@ -607,11 +840,6 @@ const Journal: FC = () => {
     width: "150px",
   });
 
-  const loading =
-    isJournalFullInfoLoading ||
-    isDeleteLessonLoading ||
-    isDeleteAttestationLoading ||
-    isStartLessonLoading;
   const lecturesCount = Math.ceil(journal.lectureHours / 2) || 0;
   const practicesCount = Math.ceil(journal.practiceHours / 2) || 0;
   const laboratoriesCount = Math.ceil(journal.laboratoryHours / 2) || 0;
@@ -648,19 +876,19 @@ const Journal: FC = () => {
 
         <Col span={8}>
           <Space direction="vertical">
-            <Button onClick={handleAddLesson} loading={loading}>
+            <Button onClick={handleAddLesson} disabled={loading}>
               Добавить занятие
             </Button>
             <Button
               onClick={() => setIsAddLessonsModalVisible(true)}
-              loading={loading}
+              disabled={loading}
             >
               Сформировать сетку занятий
             </Button>
             {(journal.practiceHours > 0 || journal.laboratoryHours > 0) && (
               <Button
                 onClick={() => setIsEditSubgroupsModalVisible(true)}
-                loading={loading}
+                disabled={loading}
               >
                 Редактирование подгрупп
               </Button>
@@ -669,7 +897,7 @@ const Journal: FC = () => {
         </Col>
         <Col span={8}>
           <Space direction="vertical">
-            <Button onClick={handleAddAttestation} loading={loading}>
+            <Button onClick={handleAddAttestation} disabled={loading}>
               Добавить аттестацию
             </Button>
           </Space>
@@ -680,6 +908,11 @@ const Journal: FC = () => {
         bordered
         sticky
         dataSource={dataSource}
+        components={{
+          body: {
+            cell: EditableCell,
+          },
+        }}
         // components={{
         //   header: {
         //     cell: EditableJournalHeaderCell,
@@ -691,17 +924,6 @@ const Journal: FC = () => {
         pagination={false}
         size="small"
         loading={loading}
-        onRow={(record, rowIndex) => {
-          return {
-            onClick: (event) => {
-              console.log(record);
-            }, // click row
-            onDoubleClick: (event) => {}, // double click row
-            onContextMenu: (event) => {}, // right button click row
-            onMouseEnter: (event) => {}, // mouse enter row
-            onMouseLeave: (event) => {}, // mouse leave row
-          };
-        }}
       />
 
       <AddLessonModal
@@ -755,11 +977,19 @@ const Journal: FC = () => {
         />
       </Modal>
 
-      <AddAttestationModal
+      <AddAnnotationModal
+        form={annotationForm}
         journalId={journal.id}
+        updateMode={isAnnotationEditing}
+        visible={isAddAnnotationModalVisible}
+        setIsModalVisible={setIsAddAnnotationModalVisible}
+      />
+
+      <AddAttestationModal
+        journalId={1}
         form={attestationEditForm}
-        visible={isAddAttestationModalVisible}
         updateMode={isAttestationEditing}
+        visible={isAddAttestationModalVisible}
         setIsModalVisible={setIsAddAttestationModalVisible}
       />
     </>

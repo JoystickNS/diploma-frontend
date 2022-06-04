@@ -13,12 +13,16 @@ import {
 } from "antd";
 import { useForm } from "antd/lib/form/Form";
 import moment from "moment";
-import { FC, useEffect, useRef, useState } from "react";
+import { FC, memo, useEffect, useRef, useState } from "react";
 import { ALL_SUBGROUPS } from "../../../constants/general";
 import { LABORATORY, LECTURE, PRACTICE } from "../../../constants/lessons";
 import { useAppDispatch } from "../../../hooks/redux";
 import { IDictionary } from "../../../models/IDictionary";
 import { ILesson } from "../../../models/ILesson";
+import {
+  ICreateManyLessonsArgs,
+  IUpdateManyLessonsArgs,
+} from "../../../services/lessons/lessons.interface";
 import {
   useCreateManyLessonsMutation,
   useUpdateManyLessonsMutation,
@@ -100,7 +104,7 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
     setLaboratoryDays([]);
   };
 
-  const createLessons = (body: any) => {
+  const createLessons = (body: ICreateManyLessonsArgs) => {
     createManyLessonsAPI(body)
       .unwrap()
       .then((payload) => {
@@ -112,7 +116,7 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
       );
   };
 
-  const updateLessons = (body: any) => {
+  const updateLessons = (body: IUpdateManyLessonsArgs) => {
     updateManyLessonsAPI(body)
       .unwrap()
       .then((payload) => {
@@ -360,7 +364,7 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
   );
 };
 
-export default AddManyLessonsForm;
+export default memo(AddManyLessonsForm);
 
 // Функция находит первые дни занятий
 const calcLessonsStartDate = (
@@ -531,7 +535,9 @@ const calcLessons = (
     return result;
   }
 
-  const firstDate = date ? date : moment(availableLessons[0].date);
+  const firstConductedLesson = lessons.find((lesson) => lesson.conducted);
+
+  const firstDate = date ? date : moment(firstConductedLesson?.date);
 
   const lessonsCount = isUpdateLessons
     ? availableLessons.length

@@ -1,3 +1,4 @@
+import { IAnnotation } from "./IAnnotation";
 import { IAttestation } from "./IAttestation";
 import { IDictionary } from "./IDictionary";
 import { ILesson } from "./ILesson";
@@ -9,6 +10,7 @@ import { IVisit } from "./IVisit";
 
 export interface IJournalFullInfo {
   id: number;
+  annotations: IAnnotation[];
   attestations: IAttestation[];
   control: IDictionary;
   discipline: IDictionary;

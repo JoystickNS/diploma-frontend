@@ -6,7 +6,7 @@ export const visitsAPI = api.injectEndpoints({
   endpoints: (builder) => ({
     updateVisit: builder.mutation<IVisit, IUpdateVisitArgs>({
       query: (body) => ({
-        url: `journals/${body.journalId}/lessons/${body.lessonId}/visits/${body.visitId}`,
+        url: `journals/${body.journalId}/lessons/${body.lessonId}/visits/students/${body.studentId}`,
         method: "PATCH",
         body,
       }),
