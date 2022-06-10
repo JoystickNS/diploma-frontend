@@ -11,10 +11,6 @@ export interface EditableJournalHeaderCellProps {
   lessonType: string;
 }
 
-export interface IStudentVisit extends IVisit {
-  lessonId: number;
-}
-
 export interface IStudentPoint extends IPoint {
   lessonId: number;
 }

@@ -6,7 +6,7 @@ import Preloader from "./components/simple/Preloader/Preloader";
 import AppLayout from "./components/simple/AppLayout/AppLayout";
 import RequireAuth from "./components/smart/RequireAuth/RequireAuth";
 import WithoutAuth from "./components/smart/WithoutAuth/WithoutAuth";
-import { ActionName, ObjectName } from "./constants/permissions";
+import { ActionName, SubjectName } from "./constants/permissions";
 import { RouteName } from "./constants/routes";
 import { useAppDispatch, useAppSelector } from "./hooks/redux";
 import Admin from "./pages/Admin/Admin";
@@ -21,7 +21,6 @@ import Journal from "./pages/Journals/Journal/Journal";
 import CreateJournal from "./pages/Journals/Journal/CreateJournal/CreateJournal";
 import "moment/locale/ru";
 import moment from "moment";
-import db from "./assets/images/bd.png";
 
 const App: FC = () => {
   const isAppInitialized = useAppSelector((state) => state.app.isInitialized);
@@ -59,8 +58,6 @@ const App: FC = () => {
       <Route path="/" element={<AppLayout />}>
         {/* START Authorized routes */}
 
-        <Route path="bd" element={<img src={db}></img>}></Route>
-
         {/* START Main */}
         <Route element={<RequireAuth />}>
           <Route path={RouteName.Main} element={<Main />} />
@@ -68,7 +65,7 @@ const App: FC = () => {
         {/* END Main */}
 
         {/* START Admin */}
-        {/* <Route
+        <Route
           element={
             <RequireAuth
               requiredPermission={{
@@ -77,9 +74,9 @@ const App: FC = () => {
               }}
             />
           }
-        > */}
-        <Route path={RouteName.Admin} element={<Admin />} />
-        {/* </Route> */}
+        >
+          <Route path={RouteName.Admin} element={<Admin />} />
+        </Route>
         {/* END Admin */}
 
         {/* START Journals */}
@@ -88,7 +85,7 @@ const App: FC = () => {
             <RequireAuth
               requiredPermission={{
                 action: ActionName.Read,
-                subject: ObjectName.Journal,
+                subject: SubjectName.Journal,
               }}
             />
           }
@@ -111,7 +108,7 @@ const App: FC = () => {
             <RequireAuth
               requiredPermission={{
                 action: ActionName.Read,
-                subject: ObjectName.Report,
+                subject: SubjectName.Report,
               }}
             />
           }

@@ -293,7 +293,7 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
           pagination={false}
           size="small"
           sticky
-          scroll={{ y: window.screen.availHeight - 400 }}
+          scroll={{ y: window.screen.availHeight - 500 }}
         ></Table>
       )}
       <Row

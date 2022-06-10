@@ -8,7 +8,7 @@ const CancelButton: FC<CancelButtonProps> = ({
   tooltipText,
   ...props
 }) => {
-  console.log("CANCEL BUTTON RENDER");
+  // console.log("CANCEL BUTTON RENDER");
   return (
     <Popover content={tooltipText}>
       <Button type="link" style={{ padding: 0 }} size="small" {...props}>

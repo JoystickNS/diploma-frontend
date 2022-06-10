@@ -78,7 +78,7 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
 
   const [form] = useForm();
 
-  useEffect(() => {
+  const clearForm = () => {
     setLectureDays([]);
     setPracticeDays([]);
     setLaboratoryDays([]);
@@ -91,6 +91,10 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
     if (laboratoryBtRef?.current) {
       laboratoryBtRef.current.textContent = "Нажмите для добавления";
     }
+  };
+
+  useEffect(() => {
+    clearForm();
   }, [subgroups]);
 
   const handleSubgroupChange = (value: number) => {
@@ -99,9 +103,7 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
     } else {
       setIsAllSubgroupsSelected(false);
     }
-    setLectureDays([]);
-    setPracticeDays([]);
-    setLaboratoryDays([]);
+    clearForm();
   };
 
   const createLessons = (body: ICreateManyLessonsArgs) => {

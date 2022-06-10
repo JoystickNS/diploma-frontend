@@ -1,62 +1,50 @@
 import {
   Button,
-  Checkbox,
   Col,
-  Form,
-  Input,
   message,
   Modal,
-  Popover,
   Row,
   Space,
   Spin,
+  Switch,
   Table,
-  Tag,
-  Tooltip,
 } from "antd";
 import moment from "moment";
 import { FC, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import AddItemButton from "../../../components/simple/AddItemButton/AddItemButton";
-import DeleteButton from "../../../components/simple/DeleteButton/DeleteButton";
 import { useGetJournalFullInfoQuery } from "../../../services/journals/journals.service";
-import {
-  useDeleteLessonMutation,
-  useStartLessonMutation,
-} from "../../../services/lessons/lessons.service";
-import {
-  IJournalTable,
-  IStudentPoint,
-  IStudentVisit,
-} from "./Journal.interface";
-import EditButton from "../../../components/simple/EditButton/EditButton";
+import { IJournalTable } from "./Journal.interface";
 import { useForm } from "antd/lib/form/Form";
-import { useDeleteAttestationMutation } from "../../../services/attestations/attestations.service";
 import EditSubgroups from "../../../components/smart/EditSubgroups/EditSubgroups";
 import { useDispatch } from "react-redux";
 import {
-  deleteAnnotationAction,
-  deleteAttestationAction,
-  deleteLessonAction,
   setJournalAction,
-  startLessonAction,
   updateManySubgroupsStudentsAction,
-  updateVisitAction,
 } from "../../../store/slices/journal/journal.slice";
 import { useAppSelector } from "../../../hooks/redux";
-import { LECTURE, PRACTICE } from "../../../constants/lessons";
 import AddManyLessonsForm from "../../../components/smart/AddManyLessonsForm/AddManyLessonsForm";
 import AddLessonModal from "../../../components/smart/AddLessonModal/AddLessonModal";
 import AddAttestationModal from "../../../components/smart/AddAttestationModal/AddAttestationModal";
 import { useCreateSubgroupStudentMutation } from "../../../services/subgroups/subgroups.service";
 import { IStudentSubgroup } from "../../../models/IStudentSubgroup";
 import _ from "lodash";
-import StartButton from "../../../components/simple/StartButton/StartButton";
-import { useUpdateVisitMutation } from "../../../services/visits/visits.service";
-import OkButton from "../../../components/simple/OkButton/OkButton";
-import { CheckboxChangeEvent } from "antd/lib/checkbox";
 import AddAnnotationModal from "../../../components/smart/AddAnnotationModal/AddAnnotationModal";
-import { useDeleteAnnotationMutation } from "../../../services/annotations/annotations.service";
+import { IVisit } from "../../../models/IVisit";
+import { IPoint } from "../../../models/IPoint";
+import JournalTableStudentName from "../../../components/smart/JournalTable/JournalTableStudentName/JournalTableStudentName";
+import JournalTableLesson from "../../../components/smart/JournalTable/JournalTableLesson/JournalTableLesson";
+import JournalTableLessonTopic from "../../../components/smart/JournalTable/JournalTableLessonTopic/JournalTableLessonTopic";
+import JournalTableStudentAbsent from "../../../components/smart/JournalTable/JournalTableStudentAbsent/JournalTableStudentAbsent";
+import JournalTableAnnotation from "../../../components/smart/JournalTable/JournalTableAnnotation/JournalTableAnnotation";
+import JournalTableAttestation from "../../../components/smart/JournalTable/JournalTableAttestation/JournalTableAttestation";
+import JournalEditableCell from "../../../components/smart/JournalTable/JournalEditableCell/JournalEditableCell";
+import JournalEditableRow from "../../../components/smart/JournalTable/JournalEditableRow/JournalEditableRow";
+import PopCodeConfirm from "../../../components/smart/PopCodeConfirm/PopCodeConfirm";
+import { ExportOutlined } from "@ant-design/icons";
+import { COURSE_PROJECT, COURSE_WORK } from "../../../constants/workTypes";
+import JournalTableAttestationEdit from "../../../components/smart/JournalTable/JournalTableAttestationEdit/JournalTableAttestationEdit";
+import { LECTURE, PRACTICE } from "../../../constants/lessons";
+import * as XLSX from "xlsx";
 
 const Journal: FC = () => {
   const { journalId } = useParams();
@@ -74,16 +62,6 @@ const Journal: FC = () => {
     createSubgroupStudentAPI,
     { isLoading: isCreateSubgroupStudentLoading },
   ] = useCreateSubgroupStudentMutation();
-  const [startLessonAPI, { isLoading: isStartLessonLoading }] =
-    useStartLessonMutation();
-  const [updateVisitAPI, { isLoading: isUpdateVisitLoading }] =
-    useUpdateVisitMutation();
-  const [deleteLessonAPI, { isLoading: isDeleteLessonLoading }] =
-    useDeleteLessonMutation();
-  const [deleteAttestationAPI, { isLoading: isDeleteAttestationLoading }] =
-    useDeleteAttestationMutation();
-  const [deleteAnnotationAPI, { isLoading: isDeleteAnnotationLoading }] =
-    useDeleteAnnotationMutation();
 
   const [isAddAnnotationModalVisible, setIsAddAnnotationModalVisible] =
     useState<boolean>(false);
@@ -101,22 +79,28 @@ const Journal: FC = () => {
   const [isAttestationEditing, setIsAttestationEditing] =
     useState<boolean>(false);
   const [isLessonEditing, setIsLessonEditing] = useState<boolean>(false);
+
   const [isJournalLoaded, setIsJournalLoaded] = useState<boolean>(false);
   const [isShowTodayLessons, setIsShowTodayLessons] = useState<boolean>(false);
 
   const [endEditingDataIndex, setEndEditingDataIndex] = useState<string>("");
 
+  const [isStartLessonLoading, setIsStartLessonLoading] =
+    useState<boolean>(false);
+
+  const [isDeleteLessonLoading, setIsDeleteLessonLoading] =
+    useState<boolean>(false);
+
+  const [isDeleteAnnotationLoading, setIsDeleteAnnotationLoading] =
+    useState<boolean>(false);
+
+  const [isDeleteAttestationLoading, setIsDeleteAttestationLoading] =
+    useState<boolean>(false);
+
   const [isSomeStudentWithoutSubgroup, setIsSomeStudentWithoutSubgroup] =
     useState<boolean>(false);
 
-  // const [visitsInProgress, setVisitsInProgress] = useState<
-  //   {
-  //     lessonId: number;
-  //     studentId: number;
-  //   }[]
-  // >([]);
-
-  console.log("JOURNAL RENDER");
+  // console.log("JOURNAL RENDER");
 
   useEffect(() => {
     if (endEditingDataIndex) {
@@ -127,7 +111,7 @@ const Journal: FC = () => {
   const [editingDataIndex, setEditingDataIndex] = useState<string>("");
 
   const [annotationForm] = useForm();
-  const [attestationEditForm] = useForm();
+  const [attestationForm] = useForm();
   const [lessonForm] = useForm();
 
   const loading =
@@ -136,89 +120,19 @@ const Journal: FC = () => {
     isDeleteLessonLoading ||
     isDeleteAttestationLoading ||
     isStartLessonLoading ||
-    // isUpdateVisitLoading ||
     isDeleteAnnotationLoading;
 
+  const shownLessons = useMemo(() => {
+    if (isShowTodayLessons) {
+      return journal.lessons.filter((lesson) =>
+        moment(lesson.date).isSame(moment(), "d")
+      );
+    }
+
+    return journal.lessons;
+  }, [journal.lessons, isShowTodayLessons]);
+
   const isEditing = (dataIndex: string) => dataIndex === editingDataIndex;
-
-  interface EditableCellProps extends React.HTMLAttributes<HTMLElement> {
-    isEditing: boolean;
-    dataIndex: string;
-    record: IJournalTable;
-    lessonId?: number;
-    annotationId?: number;
-    lessonConducted?: boolean;
-    children: React.ReactNode;
-  }
-
-  const EditableCell: React.FC<EditableCellProps> = ({
-    isEditing,
-    dataIndex,
-    record,
-    lessonId,
-    annotationId,
-    lessonConducted,
-    children,
-    ...restProps
-  }) => {
-    console.log("CELL RENDER");
-    let childNode = children;
-
-    if (lessonId) {
-      const visit = journal.visits.find(
-        (visit) => visit.lessonId === lessonId && visit.studentId === record.key
-      );
-
-      if (isEditing) {
-        childNode = visit && (
-          <Checkbox
-            checked={record[`${lessonId} isAbsent`]?.isAbsent}
-            disabled={journal.visitsInProgress.some(
-              (visitInProgress) =>
-                visit.lessonId === visitInProgress.lessonId &&
-                visit.studentId === visitInProgress.studentId
-            )}
-            onChange={(e: CheckboxChangeEvent) =>
-              handleAbsentChange(e.target.checked, lessonId, record.key)
-            }
-          />
-        );
-      } else {
-        if (visit) {
-          childNode = record[`${lessonId} isAbsent`]?.isAbsent && "H";
-        }
-      }
-    }
-
-    if (annotationId) {
-      const point = journal.points.find(
-        (point) =>
-          point.annotationId === annotationId && point.studentId === record.key
-      );
-
-      const annotation = journal.annotations.find(
-        (annotation) => annotation.id === annotationId
-      );
-
-      if (isEditing) {
-        childNode = annotation && (
-          <Form.Item name="points" style={{ margin: 0 }}>
-            <Input />
-          </Form.Item>
-        );
-      } else {
-        if (annotation) {
-          if (point) {
-            childNode = record[`${annotationId} points`].numberOfPoints;
-          } else if (lessonConducted) {
-            childNode = <AddItemButton />;
-          }
-        }
-      }
-    }
-
-    return <td {...restProps}>{childNode}</td>;
-  };
 
   useEffect(() => {
     if (isJournalFullInfoSuccess) {
@@ -271,16 +185,6 @@ const Journal: FC = () => {
     })();
   }, [journal.students, journal.subgroups]);
 
-  useEffect(() => {}, [journal]);
-
-  const showTodayJournal = useMemo(() => {
-    return isShowTodayLessons
-      ? journal.lessons.filter((lesson) =>
-          moment(lesson.date).isSame(moment(), "d")
-        )
-      : {};
-  }, [isShowTodayLessons]);
-
   const handleAddLesson = () => {
     lessonForm.setFieldsValue({
       subgroupIds: undefined,
@@ -297,7 +201,7 @@ const Journal: FC = () => {
   };
 
   const handleAddAttestation = () => {
-    attestationEditForm.setFieldsValue({
+    attestationForm.setFieldsValue({
       workTypeId: undefined,
       workTopic: undefined,
       maximumPoints: undefined,
@@ -310,318 +214,250 @@ const Journal: FC = () => {
     setIsAddAttestationModalVisible(true);
   };
 
-  const handleAddPoints = () => {};
+  const handleExportToExcel = () => {
+    const json: any[] = [];
 
-  const handleEditPoints = () => {};
+    journal.students.forEach((student, i) => {
+      const temp: any = {};
 
-  const handleDeletePoints = () => {};
+      temp["№"] = i + 1;
+      temp[
+        "ФИО студента"
+      ] = `${student.lastName} ${student.firstName} ${student.middleName}`;
 
-  const handleAbsentChange = async (
-    value: boolean,
-    lessonId: number,
-    studentId: number
-  ) => {
-    // setVisitsInProgress([
-    //   ..._.cloneDeep(visitsInProgress),
-    //   { lessonId, studentId },
-    // ]);
-    // dispatch(addVisitInProgressAction({ lessonId, studentId }));
+      let pointsCount = 0;
+      let absenteeismCount = 0;
 
-    updateVisitAPI({
-      isAbsent: value,
-      journalId: journal.id,
-      lessonId,
-      studentId,
-    })
-      .unwrap()
-      .then((payload) => {
-        // dispatch(deleteVisitInProgressAction({ lessonId, studentId }));
-        dispatch(updateVisitAction(payload));
-      })
-      .catch(() => message.error("Произошла ошибка при изменении посещения"));
-    // .finally(() => {
-    //   setVisitsInProgress(
-    //     _.cloneDeep(visitsInProgress).filter((visit) => {
-    //       console.log(visit);
-    //       return visit.lessonId !== lessonId && visit.studentId !== studentId;
-    //     })
-    //   );
-    // });
+      journal.lessons.forEach((lesson) => {
+        const lessonDate = `${moment(lesson.date).format("DD.MM")}`;
+        const lessonType =
+          lesson.lessonType.name === LECTURE
+            ? "Лек."
+            : lesson.lessonType.name === PRACTICE
+            ? "Пр."
+            : "Лаб.";
+
+        const visit = journal.visits.find(
+          (visit) =>
+            visit.studentId === student.id && visit.lessonId === lesson.id
+        );
+
+        if (visit?.isAbsent) {
+          absenteeismCount++;
+        }
+
+        temp[`${lessonDate} ${lessonType}`] = visit?.isAbsent ? "н" : undefined;
+      });
+
+      const annotations = journal.annotations.filter((annotation) =>
+        journal.points.some(
+          (point) =>
+            point.annotationId === annotation.id &&
+            point.studentId === student.id
+        )
+      );
+
+      annotations.forEach((annotation) =>
+        journal.points.forEach((point) => {
+          if (
+            annotation.id === point.annotationId &&
+            student.id === point.studentId
+          ) {
+            pointsCount += point.numberOfPoints;
+          }
+        })
+      );
+
+      journal.attestations.forEach((attestation) => {
+        const attestationOnStudent = journal.attestationsOnStudents.find(
+          (attestationOnStudent) =>
+            attestation.id === attestationOnStudent.attestationId &&
+            student.id === attestationOnStudent.studentId
+        );
+
+        if (attestationOnStudent && attestationOnStudent.points) {
+          pointsCount += attestationOnStudent.points;
+        }
+      });
+
+      temp["Пропуски (часов)"] = absenteeismCount * 2;
+      temp["Сумма баллов"] = pointsCount;
+
+      json.push(temp);
+    });
+
+    const header = Object.keys(json[0]);
+    const wsCols = [];
+    for (let i = 0; i < header.length; i++) {
+      if (header[i] === "ФИО студента") {
+        wsCols.push({
+          wch: Math.max(...json.map((item) => item["ФИО студента"].length + 3)),
+        });
+      } else {
+        wsCols.push({ wch: header[i].length + 3 });
+      }
+    }
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(json);
+    worksheet["!cols"] = wsCols;
+    XLSX.utils.book_append_sheet(workbook, worksheet);
+    XLSX.writeFileXLSX(
+      workbook,
+      `${journal.group.name}_${journal.discipline.name}_${journal.semester}семестр.xlsx`
+    );
   };
 
-  const dataSource: IJournalTable[] = useMemo(
-    () =>
-      journal.students.map((student) => {
-        const temp = {} as IJournalTable;
+  const studentsInfo: any[] = useMemo(() => {
+    console.log("journal.students");
+    return journal.students.map((student, i) => ({
+      studentNumber: i + 1,
+      key: student.id,
+      studentName: `${student.lastName} ${student.firstName} ${student.middleName}`,
+      subgroup: student.subgroup,
+    }));
+  }, [journal.students]);
 
-        temp.key = student.id;
-        temp.studentName = `${student.lastName} ${student.firstName} ${student.middleName}`;
-        temp.subgroup = student.subgroup;
+  const studentsVisits: { [x: string]: IVisit }[][] = useMemo(() => {
+    const allVisits: any[] = [];
+    console.log("journal.visits");
+    journal.students.forEach((student) => {
+      const temp = {} as any;
+      journal.visits
+        .filter((visit) => visit.studentId === student.id)
+        .forEach((visit) => (temp[`${visit.lessonId} isAbsent`] = visit));
+      allVisits.push(temp);
+    });
 
-        const studentVisits: IStudentVisit[] = [];
-        const studentPoints: IStudentPoint[] = [];
+    return allVisits;
+  }, [journal.visits]);
 
-        journal.lessons.forEach((lesson) => {
-          const studentVisit = journal.visits.find(
-            (visit) =>
-              visit.studentId === student.id && visit.lessonId === lesson.id
-          );
-          // const studentPoint = journal.points.find(
-          //   (point) =>
-          //     point.studentId === student.id && point.lessonId === lesson.id
-          // );
-          if (studentVisit) {
-            studentVisits.push({
-              ...studentVisit,
-              lessonId: lesson.id,
-            });
-          }
-          // if (studentPoint) {
-          //   studentPoints.push({
-          //     ...studentPoint,
-          //     lessonId: lesson.id,
-          //   });
-          // }
+  const sumPoints: { sumPoints: number }[] = [];
+
+  const studentsPoints: { [x: string]: IPoint }[][] = useMemo(() => {
+    const allPoints: any[] = [];
+    console.log("journal.annotations, journal.points");
+    journal.students.forEach((student) => {
+      const temp = {} as any;
+      let sum = 0;
+      journal.points
+        .filter((point) => point.studentId === student.id)
+        .forEach((point) => {
+          temp[`${point.annotationId} points`] = point;
+          sum += point.numberOfPoints;
         });
-
-        studentVisits.forEach(
-          (studentVisit) =>
-            (temp[`${studentVisit.lessonId} isAbsent`] = studentVisit)
+      allPoints.push(temp);
+      journal.attestations.forEach((attestation) => {
+        const attestationOnStudent = journal.attestationsOnStudents.find(
+          (attestationOnStudent) =>
+            attestation.id === attestationOnStudent.attestationId &&
+            student.id === attestationOnStudent.studentId
         );
 
-        studentPoints.forEach(
-          (studentPoint) =>
-            (temp[`${studentPoint.lessonId} isAbsent`] = studentPoint)
-        );
+        if (attestationOnStudent && attestationOnStudent.points) {
+          sum += attestationOnStudent.points;
+        }
+      });
+      sumPoints.push({ sumPoints: sum });
+    });
 
-        return temp;
-      }),
+    return allPoints;
+  }, [journal.annotations, journal.points, journal.attestationsOnStudents]);
+
+  const dataSource = useMemo(
+    () =>
+      studentsInfo.map((studentInfo, i) => ({
+        ...studentInfo,
+        ...studentsVisits[i],
+        ...studentsPoints[i],
+        ...sumPoints[i],
+      })),
     [journal]
   );
 
   const columns: any[] = [];
 
   columns.push({
+    title: "№",
+    dataIndex: "studentNumber",
+    fixed: "left",
+    align: "center",
+    width: "50px",
+  });
+
+  columns.push({
     title: "ФИО студента",
     dataIndex: "studentName",
     fixed: "left",
     align: "center",
-    width: "250px",
+    width: "300px",
     sorter: (a: any, b: any) => (a.studentName > b.studentName ? 1 : -1),
     render: (text: string, record: IJournalTable) => {
       const isSubgroup = record.subgroup || journal.subgroups.length === 1;
       return (
-        <div style={{ textAlign: "left", color: isSubgroup ? "black" : "red" }}>
-          {isSubgroup ? (
-            text
-          ) : (
-            <Tooltip title="Не назначена подгруппа" color="black">
-              <div
-                style={{ cursor: "pointer" }}
-                onClick={() => setIsEditSubgroupsModalVisible(true)}
-              >
-                {text}
-              </div>
-            </Tooltip>
-          )}
-        </div>
+        <JournalTableStudentName
+          subgroupsCount={journal.subgroups.length}
+          studentName={text}
+          isSubgroup={isSubgroup}
+          setIsModalVisible={setIsEditSubgroupsModalVisible}
+        />
       );
     },
-    shouldCellUpdate: (prevRecord: IJournalTable, record: IJournalTable) =>
-      prevRecord.studentName !== record.studentName,
   });
 
   const lessonChildren = useMemo(() => {
-    return journal.lessons.map((lesson) => {
-      const handleAddAnnotation = () => {
-        annotationForm.setFieldsValue({
-          lessonId: lesson.id,
-          name: undefined,
-        });
-
-        if (isAnnotationEditing) {
-          setIsAnnotationEditing(false);
-        }
-
-        setIsAddAnnotationModalVisible(true);
-      };
-
-      const handleStartLesson = () => {
-        if (isSomeStudentWithoutSubgroup) {
-          message.error(
-            "В группе есть студент, которому не назначена подгруппа!"
-          );
-          return;
-        }
-
-        startLessonAPI({
-          journalId: journal.id,
-          lessonId: lesson.id,
-          subgroupIds: lesson.subgroups.map((subgroup) => subgroup.id),
-        })
-          .unwrap()
-          .then((payload) => {
-            dispatch(startLessonAction(payload));
-            setEditingDataIndex(`${lesson.id} isAbsent`);
-          })
-          .catch(() =>
-            message.error("Произошла ошибка при попытке начать занятие")
-          );
-      };
-
-      const handleEditLesson = () => {
-        lessonForm.setFieldsValue({
-          lessonId: lesson.id,
-          subgroupIds:
-            lesson.subgroups.length === 1 ? lesson.subgroups[0].id : 0,
-          lessonTypeId: lesson.lessonType.id,
-          lessonTopic: lesson.lessonTopic?.name,
-          date: moment(lesson.date),
-        });
-
-        if (!isLessonEditing) {
-          setIsLessonEditing(true);
-        }
-
-        setIsAddLessonModalVisible(true);
-      };
-
-      const handleDeleteLesson = () => {
-        deleteLessonAPI({
-          lessonId: lesson.id,
-          journalId: journal.id,
-          subgroupId: lesson.subgroups[0].id,
-        })
-          .unwrap()
-          .then((payload) => dispatch(deleteLessonAction(payload)))
-          .catch(() => message.error("Произошла ошибка при удалении занятия"));
-      };
-
+    console.log("isJournalLoaded, editingDataIndex");
+    return shownLessons.map((lesson) => {
       const annotations = journal.annotations.filter(
         (annotation) => annotation.lessonId === lesson.id
       );
-
       return {
-        title: () => {
-          const date = moment(lesson.date);
-          const dayName = date.format("ddd");
-          const today = moment();
-          const lessonType =
-            lesson.lessonType.name === LECTURE
-              ? "Лек."
-              : lesson.lessonType.name === PRACTICE
-              ? "Пр."
-              : "Лаб.";
-
-          return (
-            <Row
-              justify="space-between"
-              wrap={false}
-              align="middle"
-              style={{
-                color: date.isSame(today, "date") ? "green" : undefined,
-              }}
-            >
-              <Space>
-                {`${date.format("DD.MM.YYYY")} (${
-                  dayName[0].toUpperCase() + dayName.slice(1)
-                })`}
-                <Tag
-                  color={
-                    lessonType === "Лек."
-                      ? "orange"
-                      : lessonType === "Пр."
-                      ? "blue"
-                      : "cyan"
-                  }
-                  style={{ margin: 0 }}
-                >
-                  {lessonType}
-                </Tag>
-                <EditButton
-                  disabled={!!editingDataIndex}
-                  tooltipText="Редактировать занятие"
-                  onClick={handleEditLesson}
-                />
-                <DeleteButton
-                  disabled={!!editingDataIndex}
-                  onConfirm={handleDeleteLesson}
-                />
-                {!lesson.conducted ? (
-                  <StartButton
-                    disabled={!!editingDataIndex}
-                    buttonSize={18}
-                    tooltipText="Начать занятие"
-                    onClick={handleStartLesson}
-                  />
-                ) : undefined}
-              </Space>
-              <AddItemButton
-                disabled={!!editingDataIndex}
-                tooltipText="Добавить колонку на эту дату"
-                onClick={handleAddAnnotation}
-              />
-            </Row>
-          );
-        },
+        title: (
+          <JournalTableLesson
+            journalId={journal.id}
+            lesson={lesson}
+            subgroupsCount={journal.subgroups.length}
+            editingDataIndex={editingDataIndex}
+            annotationForm={annotationForm}
+            lessonForm={lessonForm}
+            isAnnotationEditing={isAnnotationEditing}
+            isSomeStudentWithoutSubgroup={isSomeStudentWithoutSubgroup}
+            isLessonEditing={isLessonEditing}
+            setEditingDataIndex={setEditingDataIndex}
+            setIsAddAnnotationModalVisible={setIsAddAnnotationModalVisible}
+            setIsAddLessonModalVisible={setIsAddLessonModalVisible}
+            setIsAnnotationEditing={setIsAnnotationEditing}
+            setIsLessonEditing={setIsLessonEditing}
+            setIsStartLessonLoading={setIsStartLessonLoading}
+            setIsDeleteLessonLoading={setIsDeleteLessonLoading}
+          />
+        ),
         children: [
           {
-            title: () => (
-              <Popover
-                content={lesson.lessonTopic?.name || "Тема занятия отсутствует"}
-              >
-                <div style={{ overflow: "hidden", height: "24px" }}>
-                  {lesson.lessonTopic?.name || "Тема занятия отсутствует"}
-                </div>
-              </Popover>
+            title: (
+              <JournalTableLessonTopic lessonTopic={lesson.lessonTopic?.name} />
             ),
             align: "center",
             dataIndex: "lessonTopic",
             children: [
               {
-                title: () => {
-                  const dataIndex = `${lesson.id} isAbsent`;
-
-                  const handleEditVisit = () => {
-                    setEditingDataIndex(dataIndex);
-                  };
-
-                  const handleOkVisit = () => {
-                    setEditingDataIndex("");
-                    setEndEditingDataIndex(dataIndex);
-                  };
-
-                  const isSomeColumnEditing =
-                    !!editingDataIndex && editingDataIndex !== dataIndex;
-                  return (
-                    <Space>
-                      <div>Посещения</div>
-                      {lesson.conducted &&
-                        (editingDataIndex !== dataIndex ? (
-                          <EditButton
-                            disabled={isSomeColumnEditing}
-                            tooltipText="Редактировать посещения"
-                            onClick={handleEditVisit}
-                          />
-                        ) : (
-                          <OkButton
-                            tooltipText="Подтвердить"
-                            buttonSize={20}
-                            onClick={handleOkVisit}
-                          />
-                        ))}
-                    </Space>
-                  );
-                },
+                title: (
+                  <JournalTableStudentAbsent
+                    lessonId={lesson.id}
+                    lessonConducted={lesson.conducted}
+                    editingDataIndex={editingDataIndex}
+                    setEditingDataIndex={setEditingDataIndex}
+                    setEndEditingDataIndex={setEndEditingDataIndex}
+                  />
+                ),
                 dataIndex: `${lesson.id} isAbsent`,
                 align: "center",
-                width: annotations.length === 0 ? "300px" : "150px",
+                width: annotations.length === 0 ? "350px" : "150px",
                 shouldCellUpdate: (
                   prevRecord: IJournalTable,
                   record: IJournalTable
                 ) => {
                   const dataIndex = `${lesson.id} isAbsent`;
-
                   return (
                     prevRecord[dataIndex]?.isAbsent !==
                       record[dataIndex]?.isAbsent ||
@@ -629,121 +465,72 @@ const Journal: FC = () => {
                     endEditingDataIndex === dataIndex
                   );
                 },
-                onCell: (record: IJournalTable): any => ({
-                  isEditing: isEditing(`${lesson.id} isAbsent`),
-                  dataIndex: `${lesson.id} isAbsent`,
-                  lessonId: lesson.id,
-                  record,
-                }),
+                onCell: (record: IJournalTable): any => {
+                  const dataIndex = `${lesson.id} isAbsent`;
+                  return {
+                    isEditing: isEditing(dataIndex),
+                    dataIndex,
+                    lessonId: lesson.id,
+                    journalId: journal.id,
+                    studentId: record.key,
+                    isAbsent: record[dataIndex]?.isAbsent,
+                  };
+                },
               },
               ...annotations.map((annotation) => ({
-                title: () => {
-                  const handleEditAnnotation = () => {
-                    annotationForm.setFieldsValue({
-                      annotationId: annotation.id,
-                      lessonId: annotation.lessonId,
-                      name: annotation.name,
-                    });
-
-                    if (!isAnnotationEditing) {
-                      setIsAnnotationEditing(true);
+                title: (
+                  <JournalTableAnnotation
+                    annotation={annotation}
+                    editingDataIndex={editingDataIndex}
+                    form={annotationForm}
+                    isAnnotationEditing={isAnnotationEditing}
+                    journalId={journal.id}
+                    lesson={lesson}
+                    setEditingDataIndex={setEditingDataIndex}
+                    setIsAddAnnotationModalVisible={
+                      setIsAddAnnotationModalVisible
                     }
-
-                    setIsAddAnnotationModalVisible(true);
-                  };
-
-                  const handleDeleteAnnotation = () => {
-                    deleteAnnotationAPI({
-                      annotationId: annotation.id,
-                      journalId: journal.id,
-                      lessonId: annotation.lessonId,
-                    })
-                      .unwrap()
-                      .then((payload) =>
-                        dispatch(deleteAnnotationAction(payload))
-                      )
-                      .catch(() =>
-                        message.error("Произошла ошибка при удалении пояснения")
-                      );
-                  };
-
-                  const handleEditPoints = () => {
-                    setEditingDataIndex(`${annotation.id} points`);
-                  };
-
-                  const handleOkPoints = () => {
-                    setEditingDataIndex("");
-                  };
-
-                  return (
-                    <Space>
-                      <Popover
-                        content={
-                          <Space>
-                            {annotation.name || "Пояснение отсутствует"}
-                            <EditButton
-                              disabled={!!editingDataIndex}
-                              tooltipText="Редактировать пояснение"
-                              onClick={handleEditAnnotation}
-                            />
-                          </Space>
-                        }
-                      >
-                        <div
-                          style={{
-                            overflow: "hidden",
-                            height: "24px",
-                            textAlign: "left",
-                            width: "100px",
-                            wordBreak: "break-all",
-                          }}
-                        >
-                          {annotation.name || "Пояснение отсутствует"}
-                        </div>
-                      </Popover>
-                      {editingDataIndex !== `${annotation.id} points` ? (
-                        <>
-                          {lesson.conducted && (
-                            <EditButton
-                              tooltipText="Редактировать баллы"
-                              onClick={handleEditPoints}
-                            />
-                          )}
-
-                          <DeleteButton
-                            disabled={!!editingDataIndex}
-                            onConfirm={handleDeleteAnnotation}
-                          />
-                        </>
-                      ) : (
-                        <OkButton
-                          tooltipText="Подтвердить"
-                          buttonSize={20}
-                          onClick={handleOkPoints}
-                        />
-                      )}
-                    </Space>
-                  );
-                },
+                    setIsAnnotationEditing={setIsAnnotationEditing}
+                    setIsDeleteAnnotationLoading={setIsDeleteAnnotationLoading}
+                  />
+                ),
                 dataIndex: `${annotation.id} points`,
                 align: "center",
                 width: "200px",
-                onCell: (record: IJournalTable) => ({
-                  isEditing: isEditing(`${annotation.id} points`),
-                  dataIndex: `${annotation.id} points`,
-                  annotationId: annotation.id,
-                  lessonConducted: lesson.conducted,
-                  record,
-                }),
+                onCell: (record: IJournalTable) => {
+                  const dataIndex = `${annotation.id} points`;
+                  return {
+                    isEditing: isEditing(dataIndex),
+                    journalId: journal.id,
+                    studentId: record.key,
+                    lessonId: lesson.id,
+                    dataIndex,
+                    annotationId: annotation.id,
+                    lessonConducted: lesson.conducted,
+                    pointId: journal.points.find(
+                      (point) =>
+                        point.studentId === record.key &&
+                        point.annotationId === annotation.id
+                    )?.id,
+                    numberOfPoints: record[dataIndex]?.numberOfPoints,
+                  };
+                },
               })),
             ],
           },
         ],
       };
     });
-  }, [isJournalLoaded, editingDataIndex]);
+  }, [
+    journal.annotations,
+    shownLessons,
+    journal.visits,
+    journal.points,
+    isJournalLoaded,
+    editingDataIndex,
+  ]);
 
-  if (journal.lessons.length > 0) {
+  if (shownLessons.length > 0) {
     columns.push({
       title: "Занятия",
       align: "center",
@@ -757,50 +544,122 @@ const Journal: FC = () => {
 
   const attestationsChildren = useMemo(() => {
     return attestations.map((attestation) => {
-      return {
-        title: () => {
-          const handleEditAttestation = () => {
-            attestationEditForm.setFieldsValue({
-              attestationId: attestation.id,
-              workTypeId: attestation.workType?.id,
-              workTopic: attestation.workTopic,
-              maximumPoints: attestation.maximumPoints,
-            });
-
-            if (!isAttestationEditing) {
-              setIsAttestationEditing(true);
-            }
-
-            setIsAddAttestationModalVisible(true);
-          };
-
-          const handleDeleteAttestation = () => {
-            deleteAttestationAPI({
+      const workTypeName = attestation.workType.name;
+      const workTopicChildren = [
+        {
+          title: (
+            <JournalTableAttestationEdit
+              attestationId={attestation.id}
+              columnName="Баллы"
+              editingDataIndex={editingDataIndex}
+              setEditingDataIndex={setEditingDataIndex}
+              setEndEditingDataIndex={setEndEditingDataIndex}
+            />
+          ),
+          align: "center",
+          width: "200px",
+          onCell: (record: IJournalTable) => {
+            const attestationOnStudent = journal.attestationsOnStudents.find(
+              (attestationOnStudent) =>
+                attestationOnStudent.attestationId === attestation.id &&
+                attestationOnStudent.studentId === record.key
+            );
+            return {
+              isEditing: isEditing(`${attestation.id} attestation`),
               journalId: journal.id,
+              studentId: record.key,
+              dataIndex: `${attestation.id} attestationPoints`,
               attestationId: attestation.id,
-            })
-              .unwrap()
-              .then((payload) => dispatch(deleteAttestationAction(payload)))
-              .catch(() =>
-                message.error("Произошла ошибка при удалении аттестации")
-              );
-          };
-
-          const title = attestation.maximumPoints
-            ? `${attestation.workType?.name} (макс. ${attestation.maximumPoints})`
-            : attestation.workType?.name;
-
-          return (
-            <Space>
-              {title}
-              <EditButton
-                tooltipText="Редактировать промежуточную аттестацию"
-                onClick={handleEditAttestation}
-              />
-              <DeleteButton onConfirm={handleDeleteAttestation} />
-            </Space>
-          );
+              credited: attestationOnStudent?.credited,
+              attestationGrade: attestationOnStudent?.grade,
+              attestationPoints: attestationOnStudent?.points,
+            };
+          },
         },
+      ];
+      const fullWorkTopicChildren =
+        workTypeName === COURSE_PROJECT || workTypeName === COURSE_WORK
+          ? [
+              {
+                title: (
+                  <JournalTableAttestationEdit
+                    attestationId={attestation.id}
+                    columnName="Оценка"
+                    editingDataIndex={editingDataIndex}
+                    setEditingDataIndex={setEditingDataIndex}
+                    setEndEditingDataIndex={setEndEditingDataIndex}
+                  />
+                ),
+                align: "center",
+                width: "200px",
+                onCell: (record: IJournalTable) => {
+                  const attestationOnStudent =
+                    journal.attestationsOnStudents.find(
+                      (attestationOnStudent) =>
+                        attestationOnStudent.attestationId === attestation.id &&
+                        attestationOnStudent.studentId === record.key
+                    );
+                  return {
+                    isEditing: isEditing(`${attestation.id} attestation`),
+                    journalId: journal.id,
+                    studentId: record.key,
+                    dataIndex: `${attestation.id} attestationGrade`,
+                    attestationId: attestation.id,
+                    credited: attestationOnStudent?.credited,
+                    attestationGrade: attestationOnStudent?.grade,
+                    attestationPoints: attestationOnStudent?.points,
+                  };
+                },
+              },
+              ...workTopicChildren,
+            ]
+          : [
+              {
+                title: (
+                  <JournalTableAttestationEdit
+                    attestationId={attestation.id}
+                    columnName="Выполнено"
+                    editingDataIndex={editingDataIndex}
+                    setEditingDataIndex={setEditingDataIndex}
+                    setEndEditingDataIndex={setEndEditingDataIndex}
+                  />
+                ),
+                align: "center",
+                width: "200px",
+                onCell: (record: IJournalTable) => {
+                  const attestationOnStudent =
+                    journal.attestationsOnStudents.find(
+                      (attestationOnStudent) =>
+                        attestationOnStudent.attestationId === attestation.id &&
+                        attestationOnStudent.studentId === record.key
+                    );
+                  return {
+                    isEditing: isEditing(`${attestation.id} attestation`),
+                    journalId: journal.id,
+                    studentId: record.key,
+                    dataIndex: `${attestation.id} attestationCompleted`,
+                    attestationId: attestation.id,
+                    credited: attestationOnStudent?.credited,
+                    attestationGrade: attestationOnStudent?.grade,
+                    attestationPoints: attestationOnStudent?.points,
+                  };
+                },
+              },
+              ...workTopicChildren,
+            ];
+      return {
+        title: (
+          <JournalTableAttestation
+            attestation={attestation}
+            form={attestationForm}
+            isAttestationEditing={isAttestationEditing}
+            journalId={journal.id}
+            editingDataIndex={editingDataIndex}
+            setIsAddAttestationModalVisible={setIsAddAttestationModalVisible}
+            setIsAttestationEditing={setIsAttestationEditing}
+            setIsDeleteAttestationLoading={setIsDeleteAttestationLoading}
+          />
+        ),
         align: "center",
         children: [
           {
@@ -808,12 +667,17 @@ const Journal: FC = () => {
               ? attestation.workTopic
               : "Тема аттестации отсутствует",
             align: "center",
-            width: "400px",
+            children: [...fullWorkTopicChildren],
           },
         ],
       };
     });
-  }, [isJournalLoaded]);
+  }, [
+    isJournalLoaded,
+    journal.attestations,
+    journal.attestationsOnStudents,
+    editingDataIndex,
+  ]);
 
   if (attestations.length > 0) {
     columns.push({
@@ -823,15 +687,17 @@ const Journal: FC = () => {
     });
   }
 
-  columns.push({
-    title: journal.maximumPoints
-      ? `Суммарный балл (макс. ${journal.maximumPoints})`
-      : "Суммарный балл",
-    align: "center",
-    dataIndex: "sumPoints",
-    sorter: (a: any, b: any) => (a.studentName > b.studentName ? 1 : -1),
-    width: "150px",
-  });
+  if (journal.points.length > 0 || attestations.length > 0) {
+    columns.push({
+      title: journal.maximumPoints
+        ? `Суммарный балл (макс. ${journal.maximumPoints})`
+        : "Суммарный балл",
+      align: "center",
+      dataIndex: "sumPoints",
+      sorter: (a: any, b: any) => (a.studentName > b.studentName ? 1 : -1),
+      width: "150px",
+    });
+  }
 
   columns.push({
     title: journal.control.name,
@@ -843,10 +709,9 @@ const Journal: FC = () => {
   const lecturesCount = Math.ceil(journal.lectureHours / 2) || 0;
   const practicesCount = Math.ceil(journal.practiceHours / 2) || 0;
   const laboratoriesCount = Math.ceil(journal.laboratoryHours / 2) || 0;
-
   return (
     <>
-      <Row align="middle" gutter={[24, 0]} style={{ marginBottom: 12 }}>
+      <Row align="top" gutter={[24, 0]} style={{ marginBottom: 12 }}>
         <Col>
           <h2>
             <strong>Дисциплина: </strong>
@@ -872,13 +737,42 @@ const Journal: FC = () => {
               journal.semester
             )}
           </h2>
+          <Space direction="vertical">
+            <PopCodeConfirm
+              text="После выполнения данной операции, журнал не будет виден в списке ваших журналов."
+              code={journal.id.toString()}
+              onOk={() => {}}
+            >
+              <Button danger>Удалить журнал из видимых</Button>
+            </PopCodeConfirm>
+
+            <PopCodeConfirm
+              text={
+                <div style={{ color: "red" }}>
+                  Вся информация связанная с данным журналом будет удалена!!!
+                </div>
+              }
+              code={journal.id.toString()}
+              onOk={() => {}}
+            >
+              <Button type="primary" danger>
+                Удалить журнал полностью
+              </Button>
+            </PopCodeConfirm>
+
+            <Button
+              icon={<ExportOutlined />}
+              type="primary"
+              onClick={handleExportToExcel}
+            >
+              Получить отчёт
+            </Button>
+          </Space>
         </Col>
 
-        <Col span={8}>
+        <Col span={4}>
+          {/* <Row>Параметры создания журнала</Row> */}
           <Space direction="vertical">
-            <Button onClick={handleAddLesson} disabled={loading}>
-              Добавить занятие
-            </Button>
             <Button
               onClick={() => setIsAddLessonsModalVisible(true)}
               disabled={loading}
@@ -893,15 +787,27 @@ const Journal: FC = () => {
                 Редактирование подгрупп
               </Button>
             )}
+            <Button onClick={handleAddLesson} disabled={loading}>
+              Добавить занятие
+            </Button>
           </Space>
         </Col>
-        <Col span={8}>
+        <Col span={4}>
           <Space direction="vertical">
             <Button onClick={handleAddAttestation} disabled={loading}>
               Добавить аттестацию
             </Button>
+            <Space>
+              <Switch
+                checked={isShowTodayLessons}
+                onChange={() => setIsShowTodayLessons(!isShowTodayLessons)}
+              />
+              <div>Сегодняшние занятия</div>
+            </Space>
           </Space>
         </Col>
+
+        <Col span={4}></Col>
       </Row>
 
       <Table
@@ -910,19 +816,15 @@ const Journal: FC = () => {
         dataSource={dataSource}
         components={{
           body: {
-            cell: EditableCell,
+            cell: JournalEditableCell,
+            row: JournalEditableRow,
           },
         }}
-        // components={{
-        //   header: {
-        //     cell: EditableJournalHeaderCell,
-        //     row: EditableRow,
-        //   },
-        // }}
         columns={columns}
-        scroll={{ x: "max-context", y: window.screen.availHeight - 600 }}
+        scroll={{ x: "max-context", y: window.screen.availHeight - 300 }}
         pagination={false}
         size="small"
+        rowClassName={"table-row editable-row"}
         loading={loading}
       />
 
@@ -986,8 +888,8 @@ const Journal: FC = () => {
       />
 
       <AddAttestationModal
-        journalId={1}
-        form={attestationEditForm}
+        journalId={journal.id}
+        form={attestationForm}
         updateMode={isAttestationEditing}
         visible={isAddAttestationModalVisible}
         setIsModalVisible={setIsAddAttestationModalVisible}

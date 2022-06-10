@@ -11,7 +11,7 @@ export enum ActionName {
   Delete = "Delete",
 }
 
-export enum ObjectName {
+export enum SubjectName {
   Admin = "Admin",
   Journal = "Journal",
   UMK = "UMK",

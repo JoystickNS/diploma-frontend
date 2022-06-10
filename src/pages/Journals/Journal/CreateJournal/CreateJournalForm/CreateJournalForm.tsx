@@ -38,6 +38,7 @@ import { useNavigate } from "react-router-dom";
 import { RouteName } from "../../../../../constants/routes";
 import { IJournalList } from "../../../../../models/IJournalList";
 import { IAttestationTable } from "./CreateJournalForm.interface";
+import moment from "moment";
 
 const { Option } = Select;
 
@@ -212,8 +213,21 @@ const CreateJournalForm: FC = () => {
   };
 
   const onFinish = async (values: any) => {
+    const group = groupsData?.find((group) => group.id === values.groupId);
+    const semesterName = values.semester;
+    const currentDate = moment();
+    const dateFormat = "DD.MM.YYYY";
+    const startDate = moment(`01.09.${group?.startYear}`, dateFormat);
+    const selectedDate =
+      semesterName === "Осенний"
+        ? moment(`01.09.${currentDate.year()}`, dateFormat)
+        : moment(`01.01.${currentDate.year()}`, dateFormat);
+    const semester =
+      Math.ceil(selectedDate.diff(startDate, "quarters") / 2) + 1;
+
     const body = {
       ...values,
+      semester,
       attestations: attestationsData.map((attestation) => ({
         workTypeId: attestation.workTypeId,
         workTopic: attestation.workTopic,
@@ -486,6 +500,16 @@ const CreateJournalForm: FC = () => {
               </Select>
             </Form.Item>
 
+            <Form.Item
+              name="semester"
+              rules={[rules.required("Обязательное поле")]}
+            >
+              <Select placeholder="Выберите семестр">
+                <Option value="Осенний">Осенний</Option>
+                <Option value="Весенний">Весенний</Option>
+              </Select>
+            </Form.Item>
+
             <Row justify="space-between" align="middle" gutter={[0, 24]}>
               <Col
                 xs={{ span: 24 }}
@@ -586,7 +610,7 @@ const CreateJournalForm: FC = () => {
                           return Promise.reject();
                         }
 
-                        const hours = practiceTopicsData.length * 2;
+                        const hours = laboratoryTopicsData.length * 2;
                         if (availableHours >= hours) {
                           return Promise.resolve();
                         }

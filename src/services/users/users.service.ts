@@ -17,6 +17,7 @@ export const usersAPI = api.injectEndpoints({
       query: (body) => ({
         url: "users-on-roles",
         method: "POST",
+        body,
       }),
       invalidatesTags: ["Users"],
     }),
@@ -25,6 +26,7 @@ export const usersAPI = api.injectEndpoints({
       query: (body) => ({
         url: "users-on-roles",
         method: "DELETE",
+        body,
       }),
       invalidatesTags: ["Users"],
     }),

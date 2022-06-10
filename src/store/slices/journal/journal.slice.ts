@@ -3,10 +3,12 @@ import _ from "lodash";
 import { LECTURE } from "../../../constants/lessons";
 import { IAnnotation } from "../../../models/IAnnotation";
 import { IAttestation } from "../../../models/IAttestation";
+import { IAttestationOnStudent } from "../../../models/IAttestationOnStudent";
 import { IDelete } from "../../../models/IDelete";
 import { IDictionary } from "../../../models/IDictionary";
 import { IJournalFullInfo } from "../../../models/IJournalFullInfo";
 import { ILesson } from "../../../models/ILesson";
+import { IPoint } from "../../../models/IPoint";
 import { IStartLesson } from "../../../models/IStartLesson";
 import { IStudentSubgroup } from "../../../models/IStudentSubgroup";
 import { ISubgroup } from "../../../models/ISubgroup";
@@ -22,7 +24,9 @@ const initialState: IJournalState = {
   id: -1,
   annotations: [],
   attestations: [],
+  attestationsOnStudents: [],
   control: {} as IDictionary,
+  controlOnStudents: [],
   discipline: {} as IDictionary,
   group: {} as IDictionary,
   laboratoryHours: 0,
@@ -59,6 +63,16 @@ export const journalSlice = createSlice({
       state.attestations = attestations;
     },
 
+    addAttestationOnStudentAction(
+      state,
+      action: PayloadAction<IAttestationOnStudent>
+    ) {
+      state.attestationsOnStudents = [
+        ..._.cloneDeep(state.attestationsOnStudents),
+        action.payload,
+      ];
+    },
+
     addLessonAction(state, action: PayloadAction<ILesson>) {
       const lessons = _.cloneDeep(state.lessons);
 
@@ -72,6 +86,10 @@ export const journalSlice = createSlice({
       state.lessons = [..._.cloneDeep(state.lessons), ...action.payload].sort(
         sortLessonsByDate
       );
+    },
+
+    addPointAction(state, action: PayloadAction<IPoint>) {
+      state.points = [..._.cloneDeep(state.points), action.payload];
     },
 
     addSubgroupAction(state, action: PayloadAction<ISubgroup>) {
@@ -110,6 +128,20 @@ export const journalSlice = createSlice({
       );
     },
 
+    updateAttestationOnStudentAction(
+      state,
+      action: PayloadAction<IAttestationOnStudent>
+    ) {
+      state.attestationsOnStudents = _.cloneDeep(
+        state.attestationsOnStudents
+      ).map((attestationOnStudent) =>
+        attestationOnStudent.attestationId === action.payload.attestationId &&
+        attestationOnStudent.studentId === action.payload.studentId
+          ? action.payload
+          : attestationOnStudent
+      );
+    },
+
     updateLessonAction(state, action: PayloadAction<ILesson>) {
       state.lessons = _.cloneDeep(state.lessons)
         .map((lesson) =>
@@ -132,6 +164,12 @@ export const journalSlice = createSlice({
           return lesson;
         })
         .sort(sortLessonsByDate);
+    },
+
+    updatePointAction(state, action: PayloadAction<IPoint>) {
+      state.points = _.cloneDeep(state.points).map((point) =>
+        point.id === action.payload.id ? action.payload : point
+      );
     },
 
     updateSubgroupStudentAction(
@@ -188,6 +226,10 @@ export const journalSlice = createSlice({
       state.annotations = _.cloneDeep(state.annotations).filter(
         (annotation) => annotation.id !== action.payload.id
       );
+
+      state.points = _.cloneDeep(state.points).filter(
+        (point) => point.annotationId !== action.payload.id
+      );
     },
 
     deleteAttestationAction(state, action: PayloadAction<IDelete>) {
@@ -197,8 +239,14 @@ export const journalSlice = createSlice({
     },
 
     deleteLessonAction(state, action: PayloadAction<IDelete>) {
-      state.lessons = state.lessons.filter(
+      state.lessons = _.cloneDeep(state.lessons).filter(
         (lesson) => lesson.id !== action.payload.id
+      );
+    },
+
+    deletePointAction(state, action: PayloadAction<IDelete>) {
+      state.points = _.cloneDeep(state.points).filter(
+        (point) => point.id !== action.payload.id
       );
     },
 
@@ -248,7 +296,9 @@ export const journalSlice = createSlice({
       state.id = action.payload.id;
       state.annotations = action.payload.annotations;
       state.attestations = action.payload.attestations;
+      state.attestationsOnStudents = action.payload.attestationsOnStudents;
       state.control = action.payload.control;
+      state.controlOnStudents = action.payload.controlOnStudents;
       state.discipline = action.payload.discipline;
       state.group = action.payload.group;
       state.laboratoryHours = action.payload.laboratoryHours;
@@ -301,21 +351,26 @@ export const journalSlice = createSlice({
 export const {
   addAnnotationAction,
   addAttestationAction,
+  addAttestationOnStudentAction,
   addLessonAction,
   addManyLessonsAction,
+  addPointAction,
   addSubgroupAction,
   addManySubgroupLessonsAction,
   addVisitInProgressAction,
   updateAnnotationAction,
   updateAttestationAction,
+  updateAttestationOnStudentAction,
   updateLessonAction,
   updateManyLessonsAction,
+  updatePointAction,
   updateSubgroupStudentAction,
   updateManySubgroupsStudentsAction,
   updateVisitAction,
   deleteAnnotationAction,
   deleteAttestationAction,
   deleteLessonAction,
+  deletePointAction,
   deleteSubgroupAction,
   deleteVisitInProgressAction,
   setJournalAction,

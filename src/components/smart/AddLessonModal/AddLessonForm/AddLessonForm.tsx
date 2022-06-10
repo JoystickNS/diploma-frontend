@@ -26,7 +26,7 @@ const AddLessonForm: FC<AddLessonFormProps> = ({
 
   useEffect(() => {
     if (updateMode) {
-      const typeId = form.getFieldValue("typeId");
+      const typeId = +form.getFieldValue("lessonTypeId");
       handleLessonTypeChange(typeId);
     }
   }, []);
