@@ -32,7 +32,6 @@ const initialState: IJournalState = {
   laboratoryHours: 0,
   lectureHours: 0,
   lessons: [],
-  lessonTypes: [],
   lessonTopics: [],
   points: [],
   practiceHours: 0,
@@ -304,7 +303,6 @@ export const journalSlice = createSlice({
       state.laboratoryHours = action.payload.laboratoryHours;
       state.lectureHours = action.payload.lectureHours;
       state.lessons = action.payload.lessons;
-      state.lessonTypes = action.payload.lessonTypes;
       state.lessonTopics = action.payload.lessonTopics;
       state.maximumPoints = action.payload.maximumPoints;
       state.points = action.payload.points;

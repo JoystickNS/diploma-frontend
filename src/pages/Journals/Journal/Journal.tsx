@@ -4,15 +4,19 @@ import {
   message,
   Modal,
   Row,
+  Select,
   Space,
   Spin,
-  Switch,
   Table,
 } from "antd";
 import moment from "moment";
 import { FC, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
-import { useGetJournalFullInfoQuery } from "../../../services/journals/journals.service";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  useDeleteJournalMutation,
+  useGetJournalFullInfoQuery,
+  useUpdateJournalMutation,
+} from "../../../services/journals/journals.service";
 import { IJournalTable } from "./Journal.interface";
 import { useForm } from "antd/lib/form/Form";
 import EditSubgroups from "../../../components/smart/EditSubgroups/EditSubgroups";
@@ -40,16 +44,24 @@ import JournalTableAttestation from "../../../components/smart/JournalTable/Jour
 import JournalEditableCell from "../../../components/smart/JournalTable/JournalEditableCell/JournalEditableCell";
 import JournalEditableRow from "../../../components/smart/JournalTable/JournalEditableRow/JournalEditableRow";
 import PopCodeConfirm from "../../../components/smart/PopCodeConfirm/PopCodeConfirm";
-import { ExportOutlined } from "@ant-design/icons";
+import { ExportOutlined, LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { COURSE_PROJECT, COURSE_WORK } from "../../../constants/workTypes";
 import JournalTableAttestationEdit from "../../../components/smart/JournalTable/JournalTableAttestationEdit/JournalTableAttestationEdit";
 import { LECTURE, PRACTICE } from "../../../constants/lessons";
 import * as XLSX from "xlsx";
+import { ILesson } from "../../../models/ILesson";
+import { RouteName } from "../../../constants/routes";
+
+const { Option } = Select;
+
+const LESSONS_PER_PAGE = 7;
 
 const Journal: FC = () => {
   const { journalId } = useParams();
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const journal = useAppSelector((state) => state.journal);
 
   const {
@@ -62,6 +74,9 @@ const Journal: FC = () => {
     createSubgroupStudentAPI,
     { isLoading: isCreateSubgroupStudentLoading },
   ] = useCreateSubgroupStudentMutation();
+
+  const [updateJournalAPI] = useUpdateJournalMutation();
+  const [deleteJournalAPI] = useDeleteJournalMutation();
 
   const [isAddAnnotationModalVisible, setIsAddAnnotationModalVisible] =
     useState<boolean>(false);
@@ -80,9 +95,6 @@ const Journal: FC = () => {
     useState<boolean>(false);
   const [isLessonEditing, setIsLessonEditing] = useState<boolean>(false);
 
-  const [isJournalLoaded, setIsJournalLoaded] = useState<boolean>(false);
-  const [isShowTodayLessons, setIsShowTodayLessons] = useState<boolean>(false);
-
   const [endEditingDataIndex, setEndEditingDataIndex] = useState<string>("");
 
   const [isStartLessonLoading, setIsStartLessonLoading] =
@@ -100,13 +112,11 @@ const Journal: FC = () => {
   const [isSomeStudentWithoutSubgroup, setIsSomeStudentWithoutSubgroup] =
     useState<boolean>(false);
 
-  // console.log("JOURNAL RENDER");
+  const [pageNumber, setPageNumber] = useState<number>(1);
 
-  useEffect(() => {
-    if (endEditingDataIndex) {
-      setEndEditingDataIndex("");
-    }
-  }, [endEditingDataIndex]);
+  const [selectedLessons, setSelectedLessons] = useState<ILesson[]>([]);
+
+  console.log("JOURNAL RENDER");
 
   const [editingDataIndex, setEditingDataIndex] = useState<string>("");
 
@@ -122,22 +132,16 @@ const Journal: FC = () => {
     isStartLessonLoading ||
     isDeleteAnnotationLoading;
 
-  const shownLessons = useMemo(() => {
-    if (isShowTodayLessons) {
-      return journal.lessons.filter((lesson) =>
-        moment(lesson.date).isSame(moment(), "d")
-      );
-    }
-
-    return journal.lessons;
-  }, [journal.lessons, isShowTodayLessons]);
-
   const isEditing = (dataIndex: string) => dataIndex === editingDataIndex;
 
   useEffect(() => {
     if (isJournalFullInfoSuccess) {
       dispatch(setJournalAction(JournalFullInfo));
-      setIsJournalLoaded(true);
+      setSelectedLessons(
+        JournalFullInfo.lessons.length > LESSONS_PER_PAGE
+          ? JournalFullInfo.lessons.slice(0, LESSONS_PER_PAGE)
+          : JournalFullInfo.lessons
+      );
     }
   }, [isJournalFullInfoLoading]);
 
@@ -185,6 +189,20 @@ const Journal: FC = () => {
     })();
   }, [journal.students, journal.subgroups]);
 
+  useEffect(() => {
+    setSelectedLessons(
+      pageNumber !== pagesCount
+        ? journal.lessons.slice(
+            (pageNumber - 1) * LESSONS_PER_PAGE,
+            pageNumber * LESSONS_PER_PAGE
+          )
+        : journal.lessons.slice(
+            (pageNumber - 1) * LESSONS_PER_PAGE +
+              (journal.lessons.length % LESSONS_PER_PAGE)
+          )
+    );
+  }, [journal.lessons]);
+
   const handleAddLesson = () => {
     lessonForm.setFieldsValue({
       subgroupIds: undefined,
@@ -212,6 +230,51 @@ const Journal: FC = () => {
     }
 
     setIsAddAttestationModalVisible(true);
+  };
+
+  const handleSetLessonPage = (value: number) => {
+    setPageNumber(value);
+    setSelectedLessons(
+      value !== pagesCount
+        ? journal.lessons.slice(
+            (value - 1) * LESSONS_PER_PAGE,
+            value * LESSONS_PER_PAGE
+          )
+        : journal.lessons.slice(
+            (value - 1) * LESSONS_PER_PAGE,
+            (value - 1) * LESSONS_PER_PAGE +
+              (journal.lessons.length % LESSONS_PER_PAGE)
+          )
+    );
+  };
+
+  const handleSetCurrentLessons = () => {
+    for (let i = 0; i < journal.lessons.length; i++) {
+      if (!journal.lessons[i].conducted) {
+        const pageNum = Math.ceil(i / LESSONS_PER_PAGE + 1);
+        if (pageNum !== pageNumber) {
+          handleSetLessonPage(pageNum);
+        }
+
+        break;
+      }
+    }
+  };
+
+  const handleHideJournal = () => {
+    updateJournalAPI({ journalId: journal.id, deleted: true })
+      .then(() => {
+        navigate(RouteName.Journals, { replace: true });
+      })
+      .catch(() => message.error("Произошла ошибка при удалении журнала"));
+  };
+
+  const handleDeleteJournal = () => {
+    deleteJournalAPI(journal.id)
+      .then(() => {
+        navigate(RouteName.Journals, { replace: true });
+      })
+      .catch(() => message.error("Произошла ошибка при удалении журнала"));
   };
 
   const handleExportToExcel = () => {
@@ -407,7 +470,7 @@ const Journal: FC = () => {
 
   const lessonChildren = useMemo(() => {
     console.log("isJournalLoaded, editingDataIndex");
-    return shownLessons.map((lesson) => {
+    return selectedLessons.map((lesson) => {
       const annotations = journal.annotations.filter(
         (annotation) => annotation.lessonId === lesson.id
       );
@@ -522,15 +585,14 @@ const Journal: FC = () => {
       };
     });
   }, [
+    selectedLessons,
+    editingDataIndex,
     journal.annotations,
-    shownLessons,
     journal.visits,
     journal.points,
-    isJournalLoaded,
-    editingDataIndex,
   ]);
 
-  if (shownLessons.length > 0) {
+  if (selectedLessons.length > 0) {
     columns.push({
       title: "Занятия",
       align: "center",
@@ -672,12 +734,7 @@ const Journal: FC = () => {
         ],
       };
     });
-  }, [
-    isJournalLoaded,
-    journal.attestations,
-    journal.attestationsOnStudents,
-    editingDataIndex,
-  ]);
+  }, [journal.attestations, journal.attestationsOnStudents, editingDataIndex]);
 
   if (attestations.length > 0) {
     columns.push({
@@ -687,7 +744,7 @@ const Journal: FC = () => {
     });
   }
 
-  if (journal.points.length > 0 || attestations.length > 0) {
+  if (journal.points.length > 0 || journal.attestationsOnStudents.length > 0) {
     columns.push({
       title: journal.maximumPoints
         ? `Суммарный балл (макс. ${journal.maximumPoints})`
@@ -709,6 +766,10 @@ const Journal: FC = () => {
   const lecturesCount = Math.ceil(journal.lectureHours / 2) || 0;
   const practicesCount = Math.ceil(journal.practiceHours / 2) || 0;
   const laboratoriesCount = Math.ceil(journal.laboratoryHours / 2) || 0;
+  const pagesCount = useMemo(
+    () => Math.ceil(journal.lessons.length / LESSONS_PER_PAGE),
+    [journal.lessons.length]
+  );
   return (
     <>
       <Row align="top" gutter={[24, 0]} style={{ marginBottom: 12 }}>
@@ -741,7 +802,7 @@ const Journal: FC = () => {
             <PopCodeConfirm
               text="После выполнения данной операции, журнал не будет виден в списке ваших журналов."
               code={journal.id.toString()}
-              onOk={() => {}}
+              onOk={handleHideJournal}
             >
               <Button danger>Удалить журнал из видимых</Button>
             </PopCodeConfirm>
@@ -753,7 +814,7 @@ const Journal: FC = () => {
                 </div>
               }
               code={journal.id.toString()}
-              onOk={() => {}}
+              onOk={handleDeleteJournal}
             >
               <Button type="primary" danger>
                 Удалить журнал полностью
@@ -771,7 +832,6 @@ const Journal: FC = () => {
         </Col>
 
         <Col span={4}>
-          {/* <Row>Параметры создания журнала</Row> */}
           <Space direction="vertical">
             <Button
               onClick={() => setIsAddLessonsModalVisible(true)}
@@ -779,6 +839,7 @@ const Journal: FC = () => {
             >
               Сформировать сетку занятий
             </Button>
+
             {(journal.practiceHours > 0 || journal.laboratoryHours > 0) && (
               <Button
                 onClick={() => setIsEditSubgroupsModalVisible(true)}
@@ -787,29 +848,79 @@ const Journal: FC = () => {
                 Редактирование подгрупп
               </Button>
             )}
+
             <Button onClick={handleAddLesson} disabled={loading}>
               Добавить занятие
             </Button>
-          </Space>
-        </Col>
-        <Col span={4}>
-          <Space direction="vertical">
+
             <Button onClick={handleAddAttestation} disabled={loading}>
               Добавить аттестацию
             </Button>
-            <Space>
-              <Switch
+          </Space>
+        </Col>
+        {journal.lessons.length > LESSONS_PER_PAGE && (
+          <Col span={5}>
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <div>Промежуток занятий</div>
+              <Row justify="space-between">
+                <Button
+                  onClick={() => handleSetLessonPage(pageNumber - 1)}
+                  icon={<LeftOutlined />}
+                  disabled={pageNumber === 1}
+                ></Button>
+
+                <Select
+                  value={pageNumber}
+                  onChange={handleSetLessonPage}
+                  style={{ width: "80%" }}
+                >
+                  {Array.from({ length: pagesCount }, (_, i) => i + 1).map(
+                    (i) => {
+                      const label =
+                        i !== pagesCount
+                          ? `${moment(
+                              journal.lessons[(i - 1) * LESSONS_PER_PAGE].date
+                            ).format("DD.MM.YYYY")} - ${moment(
+                              journal.lessons[i * LESSONS_PER_PAGE - 1].date
+                            ).format("DD.MM.YYYY")}`
+                          : `${moment(
+                              journal.lessons[(i - 1) * LESSONS_PER_PAGE].date
+                            ).format("DD.MM.YYYY")} - ${moment(
+                              journal.lessons[
+                                (i - 1) * LESSONS_PER_PAGE +
+                                  (journal.lessons.length % LESSONS_PER_PAGE) -
+                                  1
+                              ].date
+                            ).format("DD.MM.YYYY")}`;
+                      return (
+                        <Option key={i} value={i} label>
+                          {label}
+                        </Option>
+                      );
+                    }
+                  )}
+                </Select>
+
+                <Button
+                  onClick={() => handleSetLessonPage(pageNumber + 1)}
+                  icon={<RightOutlined />}
+                  disabled={pageNumber === pagesCount}
+                ></Button>
+                {/* <Switch
                 checked={isShowTodayLessons}
                 onChange={() => setIsShowTodayLessons(!isShowTodayLessons)}
               />
-              <div>Сегодняшние занятия</div>
+              <div>Сегодняшние занятия</div> */}
+              </Row>
+              <Button onClick={handleSetCurrentLessons}>
+                Перейти к первому не начатому занятию
+              </Button>
             </Space>
-          </Space>
-        </Col>
+          </Col>
+        )}
 
         <Col span={4}></Col>
       </Row>
-
       <Table
         bordered
         sticky
@@ -827,19 +938,16 @@ const Journal: FC = () => {
         rowClassName={"table-row editable-row"}
         loading={loading}
       />
-
       <AddLessonModal
         form={lessonForm}
         updateMode={isLessonEditing}
         visible={isAddOneLessonModalVisible}
         journalId={journal.id}
         lessons={journal.lessons}
-        lessonTypes={journal.lessonTypes}
         lessonTopics={journal.lessonTopics}
         subgroups={journal.subgroups}
         setIsModalVisible={setIsAddLessonModalVisible}
       />
-
       <Modal
         title="Сформировать сетку занятий"
         centered
@@ -856,7 +964,6 @@ const Journal: FC = () => {
           maxLecturesCount={lecturesCount}
           maxPracticesCount={practicesCount}
           maxLaboratoriesCount={laboratoriesCount}
-          lessonTypes={journal.lessonTypes}
           subgroups={journal.subgroups}
         />
       </Modal>

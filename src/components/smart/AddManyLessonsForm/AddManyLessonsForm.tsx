@@ -19,6 +19,7 @@ import { LABORATORY, LECTURE, PRACTICE } from "../../../constants/lessons";
 import { useAppDispatch } from "../../../hooks/redux";
 import { IDictionary } from "../../../models/IDictionary";
 import { ILesson } from "../../../models/ILesson";
+import { useGetLessonTypesQuery } from "../../../services/lesson-types/lesson-types.service";
 import {
   ICreateManyLessonsArgs,
   IUpdateManyLessonsArgs,
@@ -44,11 +45,12 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
   maxLecturesCount,
   maxPracticesCount,
   maxLaboratoriesCount,
-  lessonTypes,
   subgroups,
   setIsModalVisible,
 }) => {
   const dispatch = useAppDispatch();
+
+  const { data: lessonTypesData = [] } = useGetLessonTypesQuery();
 
   const [isLecturesModalVisible, setIsLecturesModalVisible] =
     useState<boolean>(false);
@@ -131,11 +133,7 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
   };
 
   const onFinish = async (values: any) => {
-    let date: moment.Moment | undefined;
-
-    if (!isUpdateCurrentLessons) {
-      date = values.date.clone();
-    }
+    const date = values.date.clone();
 
     let subgroupIds: number[] = [];
 
@@ -156,7 +154,7 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
       subgroupIds,
       lectureDays,
       LECTURE,
-      lessonTypes,
+      lessonTypesData,
       maxLecturesCount,
       date
     );
@@ -167,7 +165,7 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
       subgroupIds,
       practiceDays,
       PRACTICE,
-      lessonTypes,
+      lessonTypesData,
       maxPracticesCount,
       date
     );
@@ -178,7 +176,7 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
       subgroupIds,
       laboratoryDays,
       LABORATORY,
-      lessonTypes,
+      lessonTypesData,
       maxLaboratoriesCount,
       date
     );
@@ -317,19 +315,21 @@ const AddManyLessonsForm: FC<AddManyLessonsFormProps> = ({
             </Form.Item>
           </Col>
 
-          {!isUpdateCurrentLessons && (
-            <Col span={24}>
-              <Form.Item
-                label={"Дата начала"}
-                colon={false}
-                name="date"
-                rules={[rules.required("Обязательное поле")]}
-                initialValue={moment()}
-              >
-                <DatePicker style={{ width: "100%" }} format="DD.MM.YYYY" />
-              </Form.Item>
-            </Col>
-          )}
+          <Col span={24}>
+            <Form.Item
+              label={"Дата начала"}
+              colon={false}
+              name="date"
+              rules={[rules.required("Обязательное поле")]}
+              initialValue={moment()}
+            >
+              <DatePicker
+                style={{ width: "100%" }}
+                format="DD.MM.YYYY"
+                inputReadOnly
+              />
+            </Form.Item>
+          </Col>
         </Row>
 
         <Form.Item>
@@ -463,10 +463,10 @@ const calcLessonsDates = (
           break;
         }
 
-        const tempDate = couple.date.clone();
+        const dateClone = couple.date.clone();
         if (couple.isOnePerTwoWeeks) {
           if (couple.isAddOnCurrentIteration) {
-            result.push(tempDate);
+            result.push(dateClone);
             lessonsCount--;
             couple.isAddOnCurrentIteration = false;
           } else {
@@ -474,7 +474,7 @@ const calcLessonsDates = (
           }
           couple.date.add(1, "w");
         } else {
-          result.push(tempDate);
+          result.push(dateClone);
           lessonsCount--;
           couple.date.add(1, "w");
         }
@@ -523,7 +523,7 @@ const calcLessons = (
   lessonType: string,
   lessonTypes: IDictionary[],
   maxLessonsCount: number,
-  date?: moment.Moment
+  date: moment.Moment
 ) => {
   const result = { items: [] as any };
 
@@ -533,13 +533,9 @@ const calcLessons = (
 
   const availableLessons = calcFunction(lessons, subgroupIds, lessonType);
 
-  if (!date && availableLessons.length === 0) {
+  if (isUpdateLessons && availableLessons.length === 0) {
     return result;
   }
-
-  const firstConductedLesson = lessons.find((lesson) => lesson.conducted);
-
-  const firstDate = date ? date : moment(firstConductedLesson?.date);
 
   const lessonsCount = isUpdateLessons
     ? availableLessons.length
@@ -551,35 +547,31 @@ const calcLessons = (
 
   let lessonDaysSorted: ILessonDay[] = [];
 
-  const firstDateClone = firstDate.clone();
-  const firstDateNumber = firstDateClone.day();
+  const dateClone = date.clone();
+  const dateNumber = dateClone.day();
 
-  if (firstDateNumber > 1) {
+  if (dateNumber > 1) {
     const fondedLessonDay = lessonDays.find(
-      (lessonDay) => lessonDay.day === firstDateClone.format("ddd")
+      (lessonDay) => lessonDay.day === dateClone.format("ddd")
     );
     if (fondedLessonDay) {
       lessonDaysSorted.push(fondedLessonDay);
     }
-    firstDateClone.add(1, "d");
-    while (firstDateClone.day() !== firstDateNumber) {
+    dateClone.add(1, "d");
+    while (dateClone.day() !== dateNumber) {
       const fondedLessonDay = lessonDays.find(
-        (lessonDay) => lessonDay.day === firstDateClone.format("ddd")
+        (lessonDay) => lessonDay.day === dateClone.format("ddd")
       );
       if (fondedLessonDay) {
         lessonDaysSorted.push(fondedLessonDay);
       }
-      firstDateClone.add(1, "d");
+      dateClone.add(1, "d");
     }
   } else {
     lessonDaysSorted = lessonDays;
   }
-
-  const lessonsDates = calcLessonsDates(
-    lessonDaysSorted,
-    lessonsCount,
-    firstDate
-  );
+  debugger;
+  const lessonsDates = calcLessonsDates(lessonDaysSorted, lessonsCount, date);
 
   const lessonTypeId =
     lessonTypes.find((item) => item.name === lessonType)?.id || -1;

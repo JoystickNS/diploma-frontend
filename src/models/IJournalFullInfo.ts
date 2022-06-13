@@ -21,7 +21,6 @@ export interface IJournalFullInfo {
   laboratoryHours: number;
   lectureHours: number;
   lessons: ILesson[];
-  lessonTypes: IDictionary[];
   lessonTopics: ILessonTopic[];
   maximumPoints?: number;
   practiceHours: number;

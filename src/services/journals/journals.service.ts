@@ -1,8 +1,13 @@
 import { IJournalList } from "../../models/IJournalList";
 import { IJournalFullInfo } from "../../models/IJournalFullInfo";
 import { api } from "../api";
-import { ICreateJournalArgs, IGetJournalListArgs } from "./journals.interface";
+import {
+  ICreateJournalArgs,
+  IGetJournalListArgs,
+  IUpdateJournalArgs,
+} from "./journals.interface";
 import { IJournalUmkInfo } from "../../models/IJournalUmkInfo";
+import { IDelete } from "../../models/IDelete";
 
 export const journalsAPI = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -48,8 +53,24 @@ export const journalsAPI = api.injectEndpoints({
       query: (journalId) => ({
         url: `journals/${journalId}/full-info`,
       }),
-      providesTags: ["JournalFullInfo"],
       keepUnusedDataFor: 0,
+    }),
+
+    updateJournal: builder.mutation<void, IUpdateJournalArgs>({
+      query: (body) => ({
+        url: `journals/${body.journalId}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Journals"],
+    }),
+
+    deleteJournal: builder.mutation<IDelete, number>({
+      query: (journalId) => ({
+        url: `journals/${journalId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Journals"],
     }),
   }),
 });
@@ -61,4 +82,6 @@ export const {
   useGetJournalUmkInfoQuery,
   useGetJournalFullInfoQuery,
   useGetJournalsUmksListQuery,
+  useUpdateJournalMutation,
+  useDeleteJournalMutation,
 } = journalsAPI;

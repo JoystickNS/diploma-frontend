@@ -21,7 +21,6 @@ const AddLessonModal: FC<AddLessonModalProps> = ({
   journalId,
   lessons,
   lessonTopics,
-  lessonTypes,
   subgroups,
   form,
   setIsModalVisible,
@@ -98,7 +97,6 @@ const AddLessonModal: FC<AddLessonModalProps> = ({
         form={form}
         updateMode={updateMode}
         lessons={lessons}
-        lessonTypes={lessonTypes}
         lessonTopics={lessonTopics}
         subgroups={subgroups}
       />

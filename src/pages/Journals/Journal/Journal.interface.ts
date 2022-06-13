@@ -1,3 +1,5 @@
+import { IAnnotation } from "../../../models/IAnnotation";
+import { ILesson } from "../../../models/ILesson";
 import { IPoint } from "../../../models/IPoint";
 import { ISubgroup } from "../../../models/ISubgroup";
 import { IVisit } from "../../../models/IVisit";
@@ -19,6 +21,8 @@ export interface IJournalTable {
   key: number;
   studentName: string;
   subgroup: ISubgroup;
-  visits: IVisit;
+  lessons?: ILesson[];
+  annotations?: IAnnotation[];
+  visits?: IVisit[];
   [key: string]: any;
 }

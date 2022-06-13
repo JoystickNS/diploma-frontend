@@ -8,7 +8,7 @@ const JournalTableStudentName: FC<JournalTableStudentNameProps> = ({
   studentName,
   setIsModalVisible,
 }) => {
-  console.log("RENDER StudentName");
+  // console.log("RENDER StudentName");
   return (
     <div style={{ textAlign: "left", color: isSubgroup ? "black" : "red" }}>
       {isSubgroup ? (

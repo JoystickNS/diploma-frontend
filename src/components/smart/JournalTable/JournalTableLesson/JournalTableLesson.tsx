@@ -1,6 +1,6 @@
 import { message, Row, Space, Tag } from "antd";
 import moment from "moment";
-import { FC, memo, useEffect } from "react";
+import { FC, memo, useCallback, useEffect } from "react";
 import { LECTURE, PRACTICE } from "../../../../constants/lessons";
 import { useAppDispatch } from "../../../../hooks/redux";
 import {
@@ -38,6 +38,7 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
   const dispatch = useAppDispatch();
 
   console.log("RENDER Lesson");
+  console.log(lesson);
 
   const [startLessonAPI, { isLoading: isStartLessonLoading }] =
     useStartLessonMutation();
@@ -53,7 +54,7 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
     setIsDeleteLessonLoading(isDeleteLessonLoading);
   }, [isDeleteLessonLoading]);
 
-  const handleAddAnnotation = () => {
+  const handleAddAnnotation = useCallback(() => {
     annotationForm.setFieldsValue({
       lessonId: lesson.id,
       name: undefined,
@@ -64,9 +65,9 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
     }
 
     setIsAddAnnotationModalVisible(true);
-  };
+  }, [lesson.id]);
 
-  const handleStartLesson = () => {
+  const handleStartLesson = useCallback(() => {
     if (isSomeStudentWithoutSubgroup) {
       message.error("В группе есть студент, которому не назначена подгруппа!");
       return;
@@ -85,9 +86,9 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
       .catch(() =>
         message.error("Произошла ошибка при попытке начать занятие")
       );
-  };
+  }, [lesson.id]);
 
-  const handleEditLesson = () => {
+  const handleEditLesson = useCallback(() => {
     lessonForm.setFieldsValue({
       lessonId: lesson.id,
       subgroupIds: lesson.subgroups.length === 1 ? lesson.subgroups[0].id : 0,
@@ -101,9 +102,9 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
     }
 
     setIsAddLessonModalVisible(true);
-  };
+  }, [lesson.id]);
 
-  const handleDeleteLesson = () => {
+  const handleDeleteLesson = useCallback(() => {
     deleteLessonAPI({
       lessonId: lesson.id,
       journalId,
@@ -112,7 +113,7 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
       .unwrap()
       .then((payload) => dispatch(deleteLessonAction(payload)))
       .catch(() => message.error("Произошла ошибка при удалении занятия"));
-  };
+  }, [lesson.id]);
 
   const date = moment(lesson.date);
   const dayName = date.format("ddd");

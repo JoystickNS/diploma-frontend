@@ -1,6 +1,7 @@
 import { Form, Select, Input } from "antd";
 import TextArea from "antd/lib/input/TextArea";
 import { FC } from "react";
+import { useGetWorkTypesQuery } from "../../../../services/work-types/work-types.service";
 import { rules } from "../../../../utils/rules";
 import { AddAttestationFormProps } from "./AddAttestationForm.interface";
 
@@ -9,8 +10,9 @@ const { Option } = Select;
 const AddAttestationForm: FC<AddAttestationFormProps> = ({
   updateMode,
   form,
-  workTypes,
 }) => {
+  const { data: workTypesData = [] } = useGetWorkTypesQuery();
+
   return (
     <Form form={form}>
       {updateMode && (
@@ -24,7 +26,7 @@ const AddAttestationForm: FC<AddAttestationFormProps> = ({
         rules={[rules.required("Обязательное поле")]}
       >
         <Select style={{ width: "100%" }}>
-          {workTypes.map((workType) => (
+          {workTypesData.map((workType) => (
             <Option key={workType.id} value={workType.id}>
               {workType.name}
             </Option>

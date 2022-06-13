@@ -9,7 +9,6 @@ import {
   useCreateAttestationMutation,
   useUpdateAttestationMutation,
 } from "../../../services/attestations/attestations.service";
-import { useGetWorkTypesQuery } from "../../../services/work-types/work-types.service";
 import {
   addAttestationAction,
   updateAttestationAction,
@@ -26,8 +25,6 @@ const AddAttestationModal: FC<AddAttestationModalProps> = ({
   ...props
 }) => {
   const dispatch = useAppDispatch();
-
-  const { data: workTypesData } = useGetWorkTypesQuery();
 
   const [createAttestationAPI, { isLoading: isCreateAttestationLoading }] =
     useCreateAttestationMutation();
@@ -88,11 +85,7 @@ const AddAttestationModal: FC<AddAttestationModalProps> = ({
       visible={visible}
       {...props}
     >
-      <AddAttestationForm
-        form={form}
-        workTypes={workTypesData || []}
-        updateMode={updateMode}
-      />
+      <AddAttestationForm form={form} updateMode={updateMode} />
     </Modal>
   );
 };

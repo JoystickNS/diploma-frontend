@@ -17,6 +17,18 @@ export interface ICreateJournalArgs {
   laboratoryTopics?: ILessonTopic[];
 }
 
+export interface IUpdateJournalArgs {
+  journalId: number;
+  deleted: boolean;
+  lectureHours?: number;
+  practiceHours?: number;
+  laboratoryHours?: number;
+  maximumPoints?: number;
+  pointsForThree?: number;
+  pointsForFour?: number;
+  pointsForFive?: number;
+}
+
 export interface IGetJournalListArgs {
   disciplineId?: string;
 }

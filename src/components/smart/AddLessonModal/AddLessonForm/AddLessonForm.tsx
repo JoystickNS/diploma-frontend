@@ -2,6 +2,7 @@ import { AutoComplete, DatePicker, Form, Input, Select } from "antd";
 import moment from "moment";
 import { FC, useEffect, useState } from "react";
 import { ALL_SUBGROUPS } from "../../../../constants/general";
+import { useGetLessonTypesQuery } from "../../../../services/lesson-types/lesson-types.service";
 import { rules } from "../../../../utils/rules";
 import { AddLessonFormProps } from "./AddLessonForm.interface";
 
@@ -14,12 +15,14 @@ const { TextArea } = Input;
 
 const AddLessonForm: FC<AddLessonFormProps> = ({
   lessons,
-  lessonTypes,
   lessonTopics,
   subgroups,
   updateMode,
   form,
 }) => {
+  const { data: lessonTypesData, isLoading: isLessonTypesDataLoading } =
+    useGetLessonTypesQuery();
+
   const [autoCompleteOptions, setAutoCompleteOptions] = useState<
     IAutoCompleteOption[]
   >([]);
@@ -85,8 +88,9 @@ const AddLessonForm: FC<AddLessonFormProps> = ({
         <Select
           onChange={handleLessonTypeChange}
           disabled={updateMode && isEditConductedLesson}
+          loading={isLessonTypesDataLoading}
         >
-          {lessonTypes.map((lessonType) => (
+          {lessonTypesData?.map((lessonType) => (
             <Option key={lessonType.id} value={lessonType.id}>
               {lessonType.name}
             </Option>

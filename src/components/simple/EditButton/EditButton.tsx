@@ -8,8 +8,6 @@ const EditButton: FC<EditButtonProps> = ({
   tooltipText,
   ...props
 }) => {
-  // console.log("RENDER EDIT BUTTON");
-
   return (
     <Popover content={tooltipText}>
       <Button type="link" style={{ padding: 0 }} size="small" {...props}>
