@@ -66,6 +66,7 @@ const JournalTableAttestation: FC<JournalTableAttestationProps> = ({
         disabled={!!editingDataIndex}
       />
       <DeleteButton
+        tooltipText="Удалить аттестацию"
         onConfirm={handleDeleteAttestation}
         disabled={!!editingDataIndex}
       />

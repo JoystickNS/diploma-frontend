@@ -17,6 +17,8 @@
     "@types/react-dom": "^17.0.13",
     "@types/react-router-dom": "^5.3.3",
     "antd": "^4.20.5",
+    "exceljs": "^4.3.0",
+    "file-saver": "^2.0.5",
     "lodash": "^4.17.21",
     "moment": "^2.29.3",
     "node-sass": "^7.0.1",
@@ -27,8 +29,7 @@
     "react-router-dom": "^6.2.2",
     "react-scripts": "^5.0.1",
     "typescript": "^4.6.2",
-    "web-vitals": "^2.1.4",
-    "xlsx": "^0.18.5"
+    "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "set PORT=5000 && react-scripts start",
@@ -53,5 +54,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/file-saver": "^2.0.5"
   }
 }

@@ -139,6 +139,7 @@ const LessonTopicTable: FC<LessonTopicTableProps> = ({
                 />
 
                 <DeleteButton
+                  tooltipText="Удалить тему"
                   onConfirm={() => handleDelete(record)}
                   disabled={isSomeRecordEditing}
                 />

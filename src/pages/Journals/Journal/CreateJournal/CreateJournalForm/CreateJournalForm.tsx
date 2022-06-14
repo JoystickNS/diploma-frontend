@@ -318,6 +318,7 @@ const CreateJournalForm: FC = () => {
                 />
 
                 <DeleteButton
+                  tooltipText="Удалить аттестацию"
                   onConfirm={() => handleDeleteAttestation(record)}
                   disabled={isSomeRowEditing}
                 />

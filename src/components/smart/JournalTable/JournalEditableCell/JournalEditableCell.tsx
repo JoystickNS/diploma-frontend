@@ -51,7 +51,7 @@ const JournalEditableCell: React.FC<JournalEditableCellProps> = ({
 }) => {
   const dispatch = useAppDispatch();
 
-  //console.log("CELL RENDER");
+  console.log("CELL RENDER");
 
   const [editing, setEditing] = useState(false);
   const form = useContext(EditableJournalContext)!;
@@ -188,12 +188,7 @@ const JournalEditableCell: React.FC<JournalEditableCellProps> = ({
           </Row>
         );
       } else {
-        childNode = (
-          <AddItemButton
-            tooltipText="Добавить баллы"
-            onClick={() => handleAddPoint()}
-          />
-        );
+        childNode = <AddItemButton onClick={() => handleAddPoint()} />;
       }
     } else {
       childNode = numberOfPoints;

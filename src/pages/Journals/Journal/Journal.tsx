@@ -48,9 +48,16 @@ import { ExportOutlined, LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { COURSE_PROJECT, COURSE_WORK } from "../../../constants/workTypes";
 import JournalTableAttestationEdit from "../../../components/smart/JournalTable/JournalTableAttestationEdit/JournalTableAttestationEdit";
 import { LECTURE, PRACTICE } from "../../../constants/lessons";
-import * as XLSX from "xlsx";
 import { ILesson } from "../../../models/ILesson";
 import { RouteName } from "../../../constants/routes";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
+import {
+  calculateExcelColumnsWidth,
+  createBorderForCells,
+  createOuterBorder,
+  setAlignment,
+} from "../../../utils/excel";
 
 const { Option } = Select;
 
@@ -116,6 +123,9 @@ const Journal: FC = () => {
 
   const [selectedLessons, setSelectedLessons] = useState<ILesson[]>([]);
 
+  const [isRerenderStudentNameCells, setIsRerenderStudentNameCells] =
+    useState<boolean>(false);
+
   console.log("JOURNAL RENDER");
 
   const [editingDataIndex, setEditingDataIndex] = useState<string>("");
@@ -137,11 +147,6 @@ const Journal: FC = () => {
   useEffect(() => {
     if (isJournalFullInfoSuccess) {
       dispatch(setJournalAction(JournalFullInfo));
-      setSelectedLessons(
-        JournalFullInfo.lessons.length > LESSONS_PER_PAGE
-          ? JournalFullInfo.lessons.slice(0, LESSONS_PER_PAGE)
-          : JournalFullInfo.lessons
-      );
     }
   }, [isJournalFullInfoLoading]);
 
@@ -190,18 +195,20 @@ const Journal: FC = () => {
   }, [journal.students, journal.subgroups]);
 
   useEffect(() => {
-    setSelectedLessons(
-      pageNumber !== pagesCount
-        ? journal.lessons.slice(
-            (pageNumber - 1) * LESSONS_PER_PAGE,
-            pageNumber * LESSONS_PER_PAGE
-          )
-        : journal.lessons.slice(
-            (pageNumber - 1) * LESSONS_PER_PAGE +
-              (journal.lessons.length % LESSONS_PER_PAGE)
-          )
-    );
+    handleSetLessonPage(pageNumber);
   }, [journal.lessons]);
+
+  // useEffect(() => {
+  //   if (isRerenderStudentNameCells) {
+  //     setIsRerenderStudentNameCells(false);
+  //   }
+  // }, [isRerenderStudentNameCells]);
+
+  useEffect(() => {
+    if (!isRerenderStudentNameCells) {
+      setIsRerenderStudentNameCells(true);
+    }
+  }, [journal.lessons.length, journal.subgroups.length]);
 
   const handleAddLesson = () => {
     lessonForm.setFieldsValue({
@@ -234,24 +241,27 @@ const Journal: FC = () => {
 
   const handleSetLessonPage = (value: number) => {
     setPageNumber(value);
-    setSelectedLessons(
-      value !== pagesCount
-        ? journal.lessons.slice(
-            (value - 1) * LESSONS_PER_PAGE,
-            value * LESSONS_PER_PAGE
-          )
-        : journal.lessons.slice(
-            (value - 1) * LESSONS_PER_PAGE,
-            (value - 1) * LESSONS_PER_PAGE +
-              (journal.lessons.length % LESSONS_PER_PAGE)
-          )
-    );
+    if (journal.lessons.length > 7) {
+      setSelectedLessons(
+        value !== pagesCount
+          ? journal.lessons.slice(
+              (value - 1) * LESSONS_PER_PAGE,
+              value * LESSONS_PER_PAGE
+            )
+          : journal.lessons.slice(
+              (value - 1) * LESSONS_PER_PAGE,
+              journal.lessons.length
+            )
+      );
+    } else {
+      setSelectedLessons(journal.lessons);
+    }
   };
 
   const handleSetCurrentLessons = () => {
     for (let i = 0; i < journal.lessons.length; i++) {
       if (!journal.lessons[i].conducted) {
-        const pageNum = Math.ceil(i / LESSONS_PER_PAGE + 1);
+        const pageNum = Math.ceil((i + 1) / LESSONS_PER_PAGE);
         if (pageNum !== pageNumber) {
           handleSetLessonPage(pageNum);
         }
@@ -278,38 +288,82 @@ const Journal: FC = () => {
   };
 
   const handleExportToExcel = () => {
-    const json: any[] = [];
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Лист 1");
 
-    journal.students.forEach((student, i) => {
-      const temp: any = {};
+    // Информация о отчёте
+    worksheet.getCell("A1").value = "Дисциплина";
+    worksheet.getCell("B1").value = journal.discipline.name;
+    worksheet.getCell("A2").value = "Группа";
+    worksheet.getCell("B2").value = journal.group.name;
+    worksheet.getCell("A3").value = "Семестр";
+    worksheet.getCell("B3").alignment = { horizontal: "left" };
+    worksheet.getCell("B3").value = journal.semester;
+    worksheet.getCell("A4").value = "Преподаватель";
+    worksheet.getCell("B4").value = `${
+      journal.user.lastName
+    } ${journal.user.firstName[0].toUpperCase()}. ${journal.user.middleName[0].toUpperCase()}.`;
+    worksheet.getCell("A1").font = { bold: true };
+    worksheet.getCell("A2").font = { bold: true };
+    worksheet.getCell("A3").font = { bold: true };
+    worksheet.getCell("A4").font = { bold: true };
 
-      temp["№"] = i + 1;
-      temp[
-        "ФИО студента"
-      ] = `${student.lastName} ${student.firstName} ${student.middleName}`;
+    createBorderForCells(worksheet, { col: 1, row: 1 }, { col: 2, row: 4 });
+    createOuterBorder(worksheet, { col: 1, row: 1 }, { col: 2, row: 4 });
 
-      let pointsCount = 0;
+    worksheet.addRow(null);
+
+    // Шапка таблицы
+    const header = ["№", "ФИО студента"];
+    const isSubgroups = journal.subgroups.length > 1;
+    journal.lessons.forEach((lesson) => {
+      const lessonDate = `${moment(lesson.date).format("DD.MM")}`;
+      const lessonType =
+        lesson.lessonType.name === LECTURE
+          ? "лек."
+          : lesson.lessonType.name === PRACTICE
+          ? "пр."
+          : "лаб.";
+      if (isSubgroups && lesson.lessonType.name !== LECTURE) {
+        header.push(
+          `${lessonDate} ${lessonType} ${lesson.subgroups[0].subgroupNumber.value} пдгр.`
+        );
+      } else {
+        header.push(`${lessonDate} ${lessonType}`);
+      }
+    });
+    header.push("Пропуски (часов)");
+    header.push("Баллов");
+
+    worksheet.addRow(header);
+    worksheet.getRow(6).font = { bold: true };
+
+    // Основная информация таблицы
+    journal.students.forEach((student, studentIndex) => {
+      const rowValues = [];
+
+      const studentName = `${student.lastName} ${student.firstName} ${student.middleName}`;
+
+      rowValues[0] = studentIndex + 1;
+      rowValues[1] = studentName;
+
       let absenteeismCount = 0;
+      let pointsCount = 0;
 
-      journal.lessons.forEach((lesson) => {
-        const lessonDate = `${moment(lesson.date).format("DD.MM")}`;
-        const lessonType =
-          lesson.lessonType.name === LECTURE
-            ? "Лек."
-            : lesson.lessonType.name === PRACTICE
-            ? "Пр."
-            : "Лаб.";
-
+      journal.lessons.forEach((lesson, lessonIndex) => {
         const visit = journal.visits.find(
           (visit) =>
             visit.studentId === student.id && visit.lessonId === lesson.id
         );
-
         if (visit?.isAbsent) {
           absenteeismCount++;
+          rowValues[lessonIndex + 2] = "н";
         }
 
-        temp[`${lessonDate} ${lessonType}`] = visit?.isAbsent ? "н" : undefined;
+        worksheet.columns[lessonIndex + 2].alignment = {
+          horizontal: "center",
+          vertical: "middle",
+        };
       });
 
       const annotations = journal.annotations.filter((annotation) =>
@@ -319,7 +373,6 @@ const Journal: FC = () => {
             point.studentId === student.id
         )
       );
-
       annotations.forEach((annotation) =>
         journal.points.forEach((point) => {
           if (
@@ -330,45 +383,67 @@ const Journal: FC = () => {
           }
         })
       );
-
       journal.attestations.forEach((attestation) => {
         const attestationOnStudent = journal.attestationsOnStudents.find(
           (attestationOnStudent) =>
             attestation.id === attestationOnStudent.attestationId &&
             student.id === attestationOnStudent.studentId
         );
-
         if (attestationOnStudent && attestationOnStudent.points) {
           pointsCount += attestationOnStudent.points;
         }
       });
 
-      temp["Пропуски (часов)"] = absenteeismCount * 2;
-      temp["Сумма баллов"] = pointsCount;
+      rowValues[journal.lessons.length + 2] = absenteeismCount * 2;
+      rowValues[journal.lessons.length + 3] = pointsCount;
 
-      json.push(temp);
+      worksheet.addRow(rowValues);
     });
 
-    const header = Object.keys(json[0]);
-    const wsCols = [];
-    for (let i = 0; i < header.length; i++) {
-      if (header[i] === "ФИО студента") {
-        wsCols.push({
-          wch: Math.max(...json.map((item) => item["ФИО студента"].length + 3)),
-        });
-      } else {
-        wsCols.push({ wch: header[i].length + 3 });
-      }
+    // Выравнивание пропуском и баллов по центру
+    worksheet.columns[journal.lessons.length + 2].alignment = {
+      horizontal: "center",
+    };
+    worksheet.columns[journal.lessons.length + 3].alignment = {
+      horizontal: "center",
+    };
+
+    // Выравнивание № студента
+    setAlignment(worksheet, 1, 6, journal.students.length + 6, {
+      horizontal: "center",
+    });
+
+    // Выравнивание ФИО студента
+    worksheet.getCell("B6").alignment = { horizontal: "center" };
+
+    calculateExcelColumnsWidth(worksheet);
+    createBorderForCells(
+      worksheet,
+      { col: 1, row: 6 },
+      { col: journal.lessons.length + 4, row: journal.students.length + 6 }
+    );
+
+    createOuterBorder(
+      worksheet,
+      { col: 1, row: 6 },
+      { col: journal.lessons.length + 4, row: journal.students.length + 6 }
+    );
+
+    // Разворот текста дат занятий
+    for (let i = 3; i < journal.lessons.length + 3; i++) {
+      worksheet.getCell(6, i).alignment = {
+        textRotation: 90,
+      };
+      worksheet.columns[i - 1].width = 3;
     }
 
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(json);
-    worksheet["!cols"] = wsCols;
-    XLSX.utils.book_append_sheet(workbook, worksheet);
-    XLSX.writeFileXLSX(
-      workbook,
-      `${journal.group.name}_${journal.discipline.name}_${journal.semester}семестр.xlsx`
-    );
+    workbook.xlsx.writeBuffer().then((data) => {
+      const blob = new Blob([data]);
+      saveAs(
+        blob,
+        `${journal.group.name}_${journal.discipline.name}_${journal.semester}семестр.xlsx`
+      );
+    });
   };
 
   const studentsInfo: any[] = useMemo(() => {
@@ -434,6 +509,7 @@ const Journal: FC = () => {
         ...studentsVisits[i],
         ...studentsPoints[i],
         ...sumPoints[i],
+        subgroups: journal.subgroups,
       })),
     [journal]
   );
@@ -446,6 +522,8 @@ const Journal: FC = () => {
     fixed: "left",
     align: "center",
     width: "50px",
+    responsive: ["md"],
+    shouldCellUpdate: () => false,
   });
 
   columns.push({
@@ -453,7 +531,12 @@ const Journal: FC = () => {
     dataIndex: "studentName",
     fixed: "left",
     align: "center",
-    width: "300px",
+    width:
+      window.screen.availWidth < 350
+        ? "100px"
+        : window.screen.availWidth > 350 && window.screen.availWidth < 500
+        ? "200px"
+        : "300px",
     sorter: (a: any, b: any) => (a.studentName > b.studentName ? 1 : -1),
     render: (text: string, record: IJournalTable) => {
       const isSubgroup = record.subgroup || journal.subgroups.length === 1;
@@ -464,6 +547,16 @@ const Journal: FC = () => {
           isSubgroup={isSubgroup}
           setIsModalVisible={setIsEditSubgroupsModalVisible}
         />
+      );
+    },
+    shouldCellUpdate: (prevRecord: IJournalTable, record: IJournalTable) => {
+      console.log("UPDATE STUDENT CELL");
+      if (isRerenderStudentNameCells) {
+        console.log(32124234);
+      }
+      return (
+        prevRecord.subgroup.subgroupNumber.id !==
+          record.subgroup.subgroupNumber.id || isRerenderStudentNameCells
       );
     },
   });
@@ -567,6 +660,7 @@ const Journal: FC = () => {
                     journalId: journal.id,
                     studentId: record.key,
                     lessonId: lesson.id,
+                    a: 1,
                     dataIndex,
                     annotationId: annotation.id,
                     lessonConducted: lesson.conducted,
@@ -760,7 +854,7 @@ const Journal: FC = () => {
     title: journal.control.name,
     align: "center",
     sorter: (a: any, b: any) => (a.control > b.control ? 1 : -1),
-    width: "150px",
+    width: "200px",
   });
 
   const lecturesCount = Math.ceil(journal.lectureHours / 2) || 0;
@@ -773,7 +867,14 @@ const Journal: FC = () => {
   return (
     <>
       <Row align="top" gutter={[24, 0]} style={{ marginBottom: 12 }}>
-        <Col>
+        <Col
+          xs={{ span: 24 }}
+          md={{ span: 8 }}
+          lg={{ span: 6 }}
+          xl={{ span: 5 }}
+          xxl={{ span: 4 }}
+          style={{ marginBottom: 12 }}
+        >
           <h2>
             <strong>Дисциплина: </strong>
             {isJournalFullInfoLoading ? (
@@ -831,11 +932,18 @@ const Journal: FC = () => {
           </Space>
         </Col>
 
-        <Col span={4}>
+        <Col
+          xs={{ span: 24 }}
+          md={{ span: 16 }}
+          lg={{ span: 6 }}
+          xl={{ span: 5 }}
+          xxl={{ span: 4 }}
+          style={{ marginBottom: 12 }}
+        >
           <Space direction="vertical">
             <Button
               onClick={() => setIsAddLessonsModalVisible(true)}
-              disabled={loading}
+              disabled={loading || !!editingDataIndex}
             >
               Сформировать сетку занятий
             </Button>
@@ -849,7 +957,10 @@ const Journal: FC = () => {
               </Button>
             )}
 
-            <Button onClick={handleAddLesson} disabled={loading}>
+            <Button
+              onClick={handleAddLesson}
+              disabled={loading || !!editingDataIndex}
+            >
               Добавить занятие
             </Button>
 
@@ -858,21 +969,29 @@ const Journal: FC = () => {
             </Button>
           </Space>
         </Col>
+
         {journal.lessons.length > LESSONS_PER_PAGE && (
-          <Col span={5}>
+          <Col
+            xs={{ span: 24 }}
+            md={{ span: 24 }}
+            lg={{ span: 8 }}
+            xl={{ span: 7 }}
+            xxl={{ span: 6 }}
+          >
             <Space direction="vertical" style={{ width: "100%" }}>
               <div>Промежуток занятий</div>
               <Row justify="space-between">
                 <Button
                   onClick={() => handleSetLessonPage(pageNumber - 1)}
                   icon={<LeftOutlined />}
-                  disabled={pageNumber === 1}
+                  disabled={pageNumber === 1 || !!editingDataIndex}
                 ></Button>
 
                 <Select
                   value={pageNumber}
                   onChange={handleSetLessonPage}
-                  style={{ width: "80%" }}
+                  style={{ width: "70%" }}
+                  disabled={!!editingDataIndex}
                 >
                   {Array.from({ length: pagesCount }, (_, i) => i + 1).map(
                     (i) => {
@@ -886,11 +1005,7 @@ const Journal: FC = () => {
                           : `${moment(
                               journal.lessons[(i - 1) * LESSONS_PER_PAGE].date
                             ).format("DD.MM.YYYY")} - ${moment(
-                              journal.lessons[
-                                (i - 1) * LESSONS_PER_PAGE +
-                                  (journal.lessons.length % LESSONS_PER_PAGE) -
-                                  1
-                              ].date
+                              journal.lessons[journal.lessons.length - 1].date
                             ).format("DD.MM.YYYY")}`;
                       return (
                         <Option key={i} value={i} label>
@@ -904,7 +1019,7 @@ const Journal: FC = () => {
                 <Button
                   onClick={() => handleSetLessonPage(pageNumber + 1)}
                   icon={<RightOutlined />}
-                  disabled={pageNumber === pagesCount}
+                  disabled={pageNumber === pagesCount || !!editingDataIndex}
                 ></Button>
                 {/* <Switch
                 checked={isShowTodayLessons}
@@ -912,15 +1027,17 @@ const Journal: FC = () => {
               />
               <div>Сегодняшние занятия</div> */}
               </Row>
-              <Button onClick={handleSetCurrentLessons}>
+              <Button
+                onClick={handleSetCurrentLessons}
+                disabled={!!editingDataIndex}
+              >
                 Перейти к первому не начатому занятию
               </Button>
             </Space>
           </Col>
         )}
-
-        <Col span={4}></Col>
       </Row>
+
       <Table
         bordered
         sticky

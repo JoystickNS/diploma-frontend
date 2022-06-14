@@ -7,6 +7,7 @@ import { ILessonTopic } from "./ILessonTopic";
 import { IPoint } from "./IPoint";
 import { IStudent } from "./IStudent";
 import { ISubgroup } from "./ISubgroup";
+import { IUser } from "./IUser";
 import { IVisit } from "./IVisit";
 
 export interface IJournalFullInfo {
@@ -29,4 +30,5 @@ export interface IJournalFullInfo {
   subgroups: ISubgroup[];
   points: IPoint[];
   visits: IVisit[];
+  user: Omit<IUser, "login">;
 }

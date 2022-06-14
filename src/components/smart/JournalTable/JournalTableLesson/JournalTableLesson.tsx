@@ -38,7 +38,6 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
   const dispatch = useAppDispatch();
 
   console.log("RENDER Lesson");
-  console.log(lesson);
 
   const [startLessonAPI, { isLoading: isStartLessonLoading }] =
     useStartLessonMutation();
@@ -159,6 +158,7 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
           onClick={handleEditLesson}
         />
         <DeleteButton
+          tooltipText="Удалить занятие"
           disabled={!!editingDataIndex}
           onConfirm={handleDeleteLesson}
         />

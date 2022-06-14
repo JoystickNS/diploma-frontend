@@ -101,6 +101,7 @@ const JournalTableAnnotation: FC<JournalTableAnnotationProps> = ({
           )}
 
           <DeleteButton
+            tooltipText="Удалить столбец с баллами"
             disabled={!!editingDataIndex}
             onConfirm={handleDeleteAnnotation}
           />

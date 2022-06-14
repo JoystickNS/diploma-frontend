@@ -7,13 +7,14 @@ import { DeleteButtonProps } from "./DeleteButton.interface";
 const DeleteButton: FC<DeleteButtonProps> = ({
   onConfirm,
   buttonSize,
+  tooltipText,
   ...props
 }) => {
   // console.log("RENDER DELETE BUTTON");
 
   return (
     <AppPopConfirm onConfirm={onConfirm} disabled={props.disabled}>
-      <Popover content="Удалить">
+      <Popover content={tooltipText}>
         <Button type="link" style={{ padding: 0 }} size="small" {...props}>
           <DeleteOutlined
             style={{

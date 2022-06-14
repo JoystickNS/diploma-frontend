@@ -12,6 +12,7 @@ import { IPoint } from "../../../models/IPoint";
 import { IStartLesson } from "../../../models/IStartLesson";
 import { IStudentSubgroup } from "../../../models/IStudentSubgroup";
 import { ISubgroup } from "../../../models/ISubgroup";
+import { IUser } from "../../../models/IUser";
 import { IVisit } from "../../../models/IVisit";
 import { sortLessonsByDate } from "../../../utils/general";
 import {
@@ -38,6 +39,7 @@ const initialState: IJournalState = {
   semester: 0,
   students: [],
   subgroups: [],
+  user: {} as Omit<IUser, "login">,
   visits: [],
   visitsInProgress: [],
 };
@@ -310,6 +312,7 @@ export const journalSlice = createSlice({
       state.semester = action.payload.semester;
       state.students = action.payload.students;
       state.subgroups = action.payload.subgroups;
+      state.user = action.payload.user;
       state.visits = action.payload.visits;
     },
 

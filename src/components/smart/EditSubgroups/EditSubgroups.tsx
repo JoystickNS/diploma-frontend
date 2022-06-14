@@ -306,7 +306,6 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
         <Button
           onClick={handleCreateNewSubgroup}
           loading={isCreateSubgroupLoading}
-          style={{ width: "40%" }}
         >
           Создать подгруппу № {subgroups.length + 1}
         </Button>
@@ -322,11 +321,7 @@ const EditSubgroups: FC<EditSubgroupsProps> = ({
               onOk={handleDeleteLastSubgroup}
               text="Все занятия и успеваемость на них будут удалены для данной подгруппы!"
             >
-              <Button
-                danger
-                loading={isDeleteSubgroupLoading}
-                style={{ width: "40%" }}
-              >
+              <Button danger loading={isDeleteSubgroupLoading}>
                 Удалить подгруппу {subgroups.length}
               </Button>
             </PopCodeConfirm>
