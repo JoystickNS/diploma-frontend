@@ -1,22 +1,20 @@
-import { Button, Card, Col } from "antd";
-import { Meta } from "antd/lib/list/Item";
+import { Card, Col } from "antd";
 import { FC } from "react";
 import { Link } from "react-router-dom";
 import { ObjectCardProps } from "./ObjectCard.interface";
+import s from "./ObjectCard.module.scss";
 
 const ObjectCard: FC<ObjectCardProps> = ({ name, to }) => {
   return (
-    <Col xs={{ span: 10 }} md={{ span: 6 }}>
-      <Card>
-        <Meta
-          title={
-            <Link to={to}>
-              <Button type="link">{name}</Button>
-            </Link>
-          }
-          style={{ textAlign: "center" }}
-        ></Meta>
-      </Card>
+    <Col
+      xs={{ span: 24 }}
+      sm={{ span: 12 }}
+      lg={{ span: 8 }}
+      style={{ width: "100%" }}
+    >
+      <Link to={to}>
+        <Card className={s.object}>{name}</Card>
+      </Link>
     </Col>
   );
 };

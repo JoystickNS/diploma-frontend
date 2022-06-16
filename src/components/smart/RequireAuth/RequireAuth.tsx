@@ -12,9 +12,9 @@ const RequireAuth: FC<IRequireAuthProps> = ({ requiredPermission }) => {
   const location = useLocation();
   let hasPermission;
 
-  if (!requiredPermission) {
+  if (!requiredPermission && auth.user) {
     hasPermission = true;
-  } else {
+  } else if (requiredPermission) {
     hasPermission = abilities.can(
       requiredPermission.action,
       requiredPermission.subject

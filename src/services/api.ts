@@ -13,7 +13,7 @@ import {
 import { RootState } from "../store/store";
 
 // export const baseUrl = "http://localhost:3000/api";
-export const baseUrl = "http://83.69.2.5:3000/api";
+export const baseUrl = "http://83.69.2.5/api";
 
 const baseQuery = fetchBaseQuery({
   baseUrl,
@@ -60,5 +60,5 @@ export const api = createApi({
   baseQuery: baseQueryWithReAuth,
   endpoints: () => ({}),
   reducerPath: "api",
-  tagTypes: ["Journals", "Users", "JournalFullInfo", "Lessons"],
+  tagTypes: ["Journals", "Users", "JournalFullInfo", "Lessons", "Groups"],
 });

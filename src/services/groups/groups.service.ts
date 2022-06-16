@@ -7,6 +7,7 @@ export const groupsAPI = api.injectEndpoints({
       query: () => ({
         url: "groups",
       }),
+      providesTags: ["Groups"],
     }),
   }),
 });

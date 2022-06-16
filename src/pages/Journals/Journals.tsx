@@ -1,9 +1,8 @@
-import { Button, Col, Empty, Input, Row, Space, Spin } from "antd";
-import { FC } from "react";
+import { Button, Empty, Input, message, Row, Space, Spin } from "antd";
+import { FC, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Can from "../../components/simple/Can/Can";
 import JournalCard from "../../components/simple/JournalCard/JournalCard";
-import { ActionName, SubjectName } from "../../constants/permissions";
+import CSVReader from "../../components/smart/CSVReaderBasicUpload/CSVReaderBasicUpload";
 import { RouteName } from "../../constants/routes";
 import {
   useGetJournalsListQuery,
@@ -17,6 +16,15 @@ const Journals: FC = () => {
     useGetMyJournalsListQuery();
   const { data: journalsData, isFetching: isJournalsDataFetching } =
     useGetJournalsListQuery({});
+
+  const [importMessage, setImportMessage] = useState<string>("");
+
+  useEffect(() => {
+    if (importMessage) {
+      message.info(importMessage);
+      setImportMessage("");
+    }
+  }, [importMessage]);
 
   return (
     <>
@@ -35,6 +43,8 @@ const Journals: FC = () => {
               <Link to={`${RouteName.Journals}/create`}>
                 <Button type="primary">Создать</Button>
               </Link>
+
+              <CSVReader setMessage={setImportMessage} />
             </Space>
           </Row>
 
@@ -55,12 +65,17 @@ const Journals: FC = () => {
         <Empty
           description="Нет журналов"
           children={
-            <Link to={`${RouteName.Journals}/create`}>
-              <Button type="primary">Создать первый журнал</Button>
-            </Link>
+            <Space direction="vertical">
+              <Link to={`${RouteName.Journals}/create`}>
+                <Button type="primary">Создать первый журнал</Button>
+              </Link>
+
+              <CSVReader setMessage={setImportMessage} />
+            </Space>
           }
         />
       )}
+
       {/* TODO: Сделать видимым только для MANAGER */}
       {/* <Can I={ActionName.Read} a={SubjectName.Report}>
         <Row justify="center" align="middle" style={{ marginTop: 24 }}>

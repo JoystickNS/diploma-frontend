@@ -12,9 +12,14 @@ const JournalCard: FC<JournalCardProps> = ({
   semester,
 }) => {
   return (
-    <Col md={{ span: 12 }} lg={{ span: 6 }}>
+    <Col
+      xs={{ span: 24 }}
+      sm={{ span: 12 }}
+      lg={{ span: 8 }}
+      style={{ width: "100%" }}
+    >
       <Link to={String(id)}>
-        <Card className={s.journalBtn} style={{ margin: 0 }}>
+        <Card className={s.journal} style={{ margin: 0 }}>
           <div>
             <strong>Дисциплина: </strong>
             {discipline}
