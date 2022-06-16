@@ -129,6 +129,9 @@ const CreateJournalForm: FC = () => {
 
       if (index > -1) {
         const item = newData[index];
+        item.workType =
+          workTypesData?.find((workType) => workType.id === row.workTypeId)
+            ?.name || "";
         newData.splice(index, 1, {
           ...item,
           ...row,

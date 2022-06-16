@@ -35,7 +35,9 @@ const JournalEditableCell: React.FC<JournalEditableCellProps> = ({
   isEditing,
   dataIndex,
   studentId,
+  studentSubgroupId,
   lessonId,
+  lessonSubgroupId,
   journalId,
   isAbsent,
   pointId,
@@ -85,7 +87,7 @@ const JournalEditableCell: React.FC<JournalEditableCellProps> = ({
     };
 
     if (isEditing) {
-      childNode = (
+      childNode = studentSubgroupId === lessonSubgroupId && (
         <Checkbox
           checked={isAbsent}
           onChange={(e: CheckboxChangeEvent) =>
@@ -188,7 +190,9 @@ const JournalEditableCell: React.FC<JournalEditableCellProps> = ({
           </Row>
         );
       } else {
-        childNode = <AddItemButton onClick={() => handleAddPoint()} />;
+        childNode = studentSubgroupId === lessonSubgroupId && (
+          <AddItemButton onClick={() => handleAddPoint()} />
+        );
       }
     } else {
       childNode = numberOfPoints;

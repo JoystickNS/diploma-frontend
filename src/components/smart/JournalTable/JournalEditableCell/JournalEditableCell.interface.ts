@@ -4,8 +4,10 @@ export interface JournalEditableCellProps
   dataIndex: string;
   journalId: number;
   studentId: number;
+  studentSubgroupId: number;
   isAbsent: boolean;
   lessonId: number;
+  lessonSubgroupId: number;
   annotationId: number;
   attestationId: number;
   pointId: number;
