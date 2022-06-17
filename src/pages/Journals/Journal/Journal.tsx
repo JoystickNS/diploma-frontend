@@ -10,7 +10,7 @@ import {
   Table,
 } from "antd";
 import moment from "moment";
-import { FC, useEffect, useMemo, useState } from "react";
+import { FC, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   useDeleteJournalMutation,
@@ -123,9 +123,6 @@ const Journal: FC = () => {
 
   const [selectedLessons, setSelectedLessons] = useState<ILesson[]>([]);
 
-  const [isRerenderStudentNameCells, setIsRerenderStudentNameCells] =
-    useState<boolean>(false);
-
   console.log("JOURNAL RENDER");
 
   const [editingDataIndex, setEditingDataIndex] = useState<string>("");
@@ -143,6 +140,8 @@ const Journal: FC = () => {
     isDeleteAnnotationLoading;
 
   const isEditing = (dataIndex: string) => dataIndex === editingDataIndex;
+
+  const a = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isJournalFullInfoSuccess) {
@@ -197,18 +196,6 @@ const Journal: FC = () => {
   useEffect(() => {
     handleSetLessonPage(pageNumber);
   }, [journal.lessons]);
-
-  // useEffect(() => {
-  //   if (isRerenderStudentNameCells) {
-  //     setIsRerenderStudentNameCells(false);
-  //   }
-  // }, [isRerenderStudentNameCells]);
-
-  useEffect(() => {
-    if (!isRerenderStudentNameCells) {
-      setIsRerenderStudentNameCells(true);
-    }
-  }, [journal.lessons.length, journal.subgroups.length]);
 
   const handleAddLesson = () => {
     lessonForm.setFieldsValue({
@@ -549,16 +536,6 @@ const Journal: FC = () => {
         />
       );
     },
-    shouldCellUpdate: (prevRecord: IJournalTable, record: IJournalTable) => {
-      console.log("UPDATE STUDENT CELL");
-      if (isRerenderStudentNameCells) {
-        console.log(32124234);
-      }
-      return (
-        prevRecord.subgroup.subgroupNumber.id !==
-          record.subgroup.subgroupNumber.id || isRerenderStudentNameCells
-      );
-    },
   });
 
   const lessonChildren = useMemo(() => {
@@ -627,7 +604,10 @@ const Journal: FC = () => {
                     isEditing: isEditing(dataIndex),
                     dataIndex,
                     lessonId: lesson.id,
-                    lessonSubgroupId: lesson.subgroups[0].id,
+                    lessonSubgroupId:
+                      lesson.subgroups.length === 1
+                        ? lesson.subgroups[0].id
+                        : undefined,
                     journalId: journal.id,
                     studentId: record.key,
                     studentSubgroupId: record.subgroup.id,
@@ -663,7 +643,10 @@ const Journal: FC = () => {
                     studentId: record.key,
                     studentSubgroupId: record.subgroup.id,
                     lessonId: lesson.id,
-                    lessonSubgroupId: lesson.subgroups[0].id,
+                    lessonSubgroupId:
+                      lesson.subgroups.length === 1
+                        ? lesson.subgroups[0].id
+                        : undefined,
                     dataIndex,
                     annotationId: annotation.id,
                     lessonConducted: lesson.conducted,
@@ -1042,6 +1025,7 @@ const Journal: FC = () => {
       </Row>
 
       <Table
+        ref={a}
         bordered
         sticky
         dataSource={dataSource}

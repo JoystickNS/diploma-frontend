@@ -38,6 +38,8 @@ const AddAnnotationModal: FC<AddAnnotationModalProps> = ({
       .then((payload) => {
         dispatch(addAnnotationAction(payload));
         setIsModalVisible(false);
+        const tableBody = document.querySelector(".ant-table-body");
+        tableBody?.scrollBy({ left: 1 });
       })
       .catch(() => message.error("Произошла ошибка при добавлении пояснения"));
   };
@@ -48,6 +50,8 @@ const AddAnnotationModal: FC<AddAnnotationModalProps> = ({
       .then((payload) => {
         dispatch(updateAnnotationAction(payload));
         setIsModalVisible(false);
+        const tableBody = document.querySelector(".ant-table-body");
+        tableBody?.scrollBy({ left: -1 });
       })
       .catch(() => message.error("Произошла ошибка при обновлении пояснения"));
   };

@@ -87,14 +87,25 @@ const JournalEditableCell: React.FC<JournalEditableCellProps> = ({
     };
 
     if (isEditing) {
-      childNode = studentSubgroupId === lessonSubgroupId && (
-        <Checkbox
-          checked={isAbsent}
-          onChange={(e: CheckboxChangeEvent) =>
-            handleAbsentChange(e.target.checked)
-          }
-        />
-      );
+      if (lessonSubgroupId) {
+        childNode = studentSubgroupId === lessonSubgroupId && (
+          <Checkbox
+            checked={isAbsent}
+            onChange={(e: CheckboxChangeEvent) =>
+              handleAbsentChange(e.target.checked)
+            }
+          />
+        );
+      } else {
+        childNode = (
+          <Checkbox
+            checked={isAbsent}
+            onChange={(e: CheckboxChangeEvent) =>
+              handleAbsentChange(e.target.checked)
+            }
+          />
+        );
+      }
     } else {
       childNode = isAbsent && "H";
     }
@@ -190,9 +201,13 @@ const JournalEditableCell: React.FC<JournalEditableCellProps> = ({
           </Row>
         );
       } else {
-        childNode = studentSubgroupId === lessonSubgroupId && (
-          <AddItemButton onClick={() => handleAddPoint()} />
-        );
+        if (lessonSubgroupId) {
+          childNode = studentSubgroupId === lessonSubgroupId && (
+            <AddItemButton onClick={() => handleAddPoint()} />
+          );
+        } else {
+          childNode = <AddItemButton onClick={() => handleAddPoint()} />;
+        }
       }
     } else {
       childNode = numberOfPoints;

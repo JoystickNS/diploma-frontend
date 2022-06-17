@@ -101,7 +101,7 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
     }
 
     setIsAddLessonModalVisible(true);
-  }, [lesson.id]);
+  }, [lesson.id, lesson.lessonType]);
 
   const handleDeleteLesson = useCallback(() => {
     deleteLessonAPI({
