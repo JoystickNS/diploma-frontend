@@ -22,8 +22,6 @@ const JournalTableAnnotation: FC<JournalTableAnnotationProps> = ({
 }) => {
   const dispatch = useAppDispatch();
 
-  console.log("RENDER Annotation");
-
   const [deleteAnnotationAPI, { isLoading: isDeleteAnnotationLoading }] =
     useDeleteAnnotationMutation();
 

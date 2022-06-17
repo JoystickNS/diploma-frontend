@@ -15,8 +15,6 @@ const RoleItem: FC<RoleItemProps> = ({
     onDelete(userId, roleId);
   };
 
-  console.log("RoleItem RENDER");
-
   return (
     <Tag
       color={color}

@@ -19,8 +19,6 @@ const JournalTableAttestation: FC<JournalTableAttestationProps> = ({
 }) => {
   const dispatch = useAppDispatch();
 
-  console.log("RENDER Attestation");
-
   const [deleteAttestationAPI, { isLoading: isDeleteAttestationLoading }] =
     useDeleteAttestationMutation();
 

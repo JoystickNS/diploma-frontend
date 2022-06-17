@@ -5,7 +5,6 @@ import { JournalTableLessonTopicProps } from "./JournalTableLessonTopic.interfac
 const JournalTableLessonTopic: FC<JournalTableLessonTopicProps> = ({
   lessonTopic,
 }) => {
-  console.log("RENDER LessonTopic");
   return (
     <Popover content={lessonTopic || "Тема занятия отсутствует"}>
       <div style={{ overflow: "hidden", height: "24px" }}>

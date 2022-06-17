@@ -12,8 +12,6 @@ const RolesDropdown: FC<RolesDropdownProps> = ({
     onItemClick(userId, roleId);
   };
 
-  console.log("RolesDropdown RENDER");
-
   const menu = (
     <Menu
       onClick={({ key }) => handleClick(+key)}

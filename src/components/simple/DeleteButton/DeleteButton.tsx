@@ -10,8 +10,6 @@ const DeleteButton: FC<DeleteButtonProps> = ({
   tooltipText,
   ...props
 }) => {
-  // console.log("RENDER DELETE BUTTON");
-
   return (
     <AppPopConfirm onConfirm={onConfirm} disabled={props.disabled}>
       <Popover content={tooltipText}>

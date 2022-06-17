@@ -109,7 +109,6 @@ const Reports: FC = () => {
     // Выравнивание пропуском и баллов по центру
     reportData.disciplines.forEach((_, i) => {
       const col = (i + 1) * 2 + 1;
-      console.log(col);
       setAlignment(worksheet, col, 7, reportData.students.length + 6, {
         horizontal: "center",
       });

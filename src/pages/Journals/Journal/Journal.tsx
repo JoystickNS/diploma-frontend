@@ -123,8 +123,6 @@ const Journal: FC = () => {
 
   const [selectedLessons, setSelectedLessons] = useState<ILesson[]>([]);
 
-  console.log("JOURNAL RENDER");
-
   const [editingDataIndex, setEditingDataIndex] = useState<string>("");
 
   const [annotationForm] = useForm();
@@ -434,7 +432,6 @@ const Journal: FC = () => {
   };
 
   const studentsInfo: any[] = useMemo(() => {
-    console.log("journal.students");
     return journal.students.map((student, i) => ({
       studentNumber: i + 1,
       key: student.id,
@@ -445,7 +442,6 @@ const Journal: FC = () => {
 
   const studentsVisits: { [x: string]: IVisit }[][] = useMemo(() => {
     const allVisits: any[] = [];
-    console.log("journal.visits");
     journal.students.forEach((student) => {
       const temp = {} as any;
       journal.visits
@@ -461,7 +457,6 @@ const Journal: FC = () => {
 
   const studentsPoints: { [x: string]: IPoint }[][] = useMemo(() => {
     const allPoints: any[] = [];
-    console.log("journal.annotations, journal.points");
     journal.students.forEach((student) => {
       const temp = {} as any;
       let sum = 0;
@@ -539,7 +534,6 @@ const Journal: FC = () => {
   });
 
   const lessonChildren = useMemo(() => {
-    console.log("isJournalLoaded, editingDataIndex");
     return selectedLessons.map((lesson) => {
       const annotations = journal.annotations.filter(
         (annotation) => annotation.lessonId === lesson.id

@@ -13,8 +13,6 @@ const JournalTableStudentAbsent: FC<JournalTableStudentAbsentProps> = ({
 }) => {
   const dataIndex = `${lessonId} isAbsent`;
 
-  console.log("RENDER StudentAbsent");
-
   const handleEditVisit = () => {
     setEditingDataIndex(dataIndex);
   };

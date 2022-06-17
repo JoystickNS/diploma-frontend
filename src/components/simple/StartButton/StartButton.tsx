@@ -8,8 +8,6 @@ const StartButton: FC<StartButtonProps> = ({
   tooltipText,
   ...props
 }) => {
-  // console.log("RENDER START BUTTON");
-
   return (
     <Popover content={tooltipText}>
       <Button type="link" style={{ padding: 0 }} size="small" {...props}>

@@ -37,8 +37,6 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
 }) => {
   const dispatch = useAppDispatch();
 
-  console.log("RENDER Lesson");
-
   const [startLessonAPI, { isLoading: isStartLessonLoading }] =
     useStartLessonMutation();
 
