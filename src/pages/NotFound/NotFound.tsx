@@ -1,7 +1,8 @@
+import { Row } from "antd";
 import { FC } from "react";
 
 const NotFound: FC = () => {
-  return <div>ЗАПРАШИВАЕМАЯ СТРАНИЦА НЕ НАЙДЕНА</div>;
+  return <Row justify="center">ЗАПРАШИВАЕМАЯ СТРАНИЦА НЕ НАЙДЕНА</Row>;
 };
 
 export default NotFound;

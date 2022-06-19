@@ -1,7 +1,7 @@
 import { TableProps } from "antd";
 import { Dispatch, SetStateAction } from "react";
 import { ILessonTopic } from "../../../models/ILessonTopic";
-import { IAttestationTable } from "../../../pages/Journals/Journal/CreateJournal/CreateJournalForm/CreateJournalForm.interface";
+import { IAttestationTable } from "../CreateJournalForm/CreateJournalForm.interface";
 
 export interface ILessonTopicTable extends Pick<ILessonTopic, "name"> {
   key: number;

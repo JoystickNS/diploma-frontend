@@ -3,6 +3,7 @@ import { ILesson } from "../../../../models/ILesson";
 
 export interface JournalTableLessonProps {
   journalId: number;
+  journalOwnerId: number;
   lesson: ILesson;
   subgroupsCount: number;
   annotationForm: FormInstance<any>;

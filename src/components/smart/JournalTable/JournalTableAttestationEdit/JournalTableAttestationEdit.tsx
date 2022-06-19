@@ -1,5 +1,8 @@
 import { Space } from "antd";
 import React, { FC } from "react";
+import { ActionName, SubjectName } from "../../../../constants/permissions";
+import { s } from "../../../../utils/abilities";
+import Can from "../../../simple/Can/Can";
 import EditButton from "../../../simple/EditButton/EditButton";
 import OkButton from "../../../simple/OkButton/OkButton";
 import { JournalTableAttestationEditProps } from "./JournalTableAttestationEdit.interface";
@@ -8,6 +11,7 @@ const JournalTableAttestationEdit: FC<JournalTableAttestationEditProps> = ({
   attestationId,
   columnName,
   editingDataIndex,
+  journalOwnerId,
   setEditingDataIndex,
   setEndEditingDataIndex,
 }) => {
@@ -25,19 +29,24 @@ const JournalTableAttestationEdit: FC<JournalTableAttestationEditProps> = ({
   return (
     <Space>
       <div>{columnName}</div>
-      {editingDataIndex !== dataIndex ? (
-        <EditButton
-          disabled={!!editingDataIndex}
-          tooltipText="Редактировать"
-          onClick={handleAttestationEdit}
-        />
-      ) : (
-        <OkButton
-          tooltipText="Подтвердить"
-          buttonSize={20}
-          onClick={handleAttestationOk}
-        />
-      )}
+      <Can
+        I={ActionName.Update}
+        this={s(SubjectName.Journal, { userId: journalOwnerId })}
+      >
+        {editingDataIndex !== dataIndex ? (
+          <EditButton
+            disabled={!!editingDataIndex}
+            tooltipText="Редактировать"
+            onClick={handleAttestationEdit}
+          />
+        ) : (
+          <OkButton
+            tooltipText="Подтвердить"
+            buttonSize={20}
+            onClick={handleAttestationOk}
+          />
+        )}
+      </Can>
     </Space>
   );
 };

@@ -2,12 +2,12 @@ import { Card, Tabs } from "antd";
 import { FC } from "react";
 import UserOutlined from "@ant-design/icons/lib/icons/UserOutlined";
 import LockOutlined from "@ant-design/icons/lib/icons/LockOutlined";
-import FieldNumberOutlined from "@ant-design/icons/lib/icons/FieldNumberOutlined";
 import { Rule } from "antd/lib/form";
 import { authPlaceholders } from "../../../constants/auth-placeholders";
 import AuthForm from "./AuthForm/AuthForm";
 import s from "./AppAuth.module.scss";
 import { rules } from "../../../utils/rules";
+import { FieldNumberOutlined } from "@ant-design/icons";
 
 const workerLoginInputRules: Rule[] = [
   rules.required(

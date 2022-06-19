@@ -1,6 +1,5 @@
 import { Tabs } from "antd";
 import { FC } from "react";
-import Permissions from "../../components/smart/Permissions/Permissions";
 import UsersWithRoles from "../../components/smart/UsersWithRoles/UsersWithRoles";
 
 const { TabPane } = Tabs;
@@ -11,9 +10,9 @@ const Admin: FC = () => {
       <TabPane tab="Пользователи" key="1">
         <UsersWithRoles />
       </TabPane>
-      <TabPane tab="Права доступа" key="2">
+      {/* <TabPane tab="Права доступа" key="2">
         <Permissions />
-      </TabPane>
+      </TabPane> */}
     </Tabs>
   );
 };

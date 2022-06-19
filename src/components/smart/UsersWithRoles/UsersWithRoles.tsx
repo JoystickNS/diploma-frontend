@@ -31,8 +31,9 @@ const UsersWithRoles: FC = () => {
     login: loginArg ? loginArg : undefined,
   });
   const { data: rolesData, isFetching: isRolesFetching } = useGetRolesQuery();
-  const [addRoleAPI] = useAddRoleMutation();
-  const [deleteRoleAPI] = useDeleteRoleMutation();
+  const [addRoleAPI, { isLoading: isAddRoleLoading }] = useAddRoleMutation();
+  const [deleteRoleAPI, { isLoading: isDeleteRoleLoading }] =
+    useDeleteRoleMutation();
 
   useEffect(() => {
     if (usersData) {
@@ -205,7 +206,12 @@ const UsersWithRoles: FC = () => {
       dataSource={tableData}
       columns={columns}
       size="small"
-      loading={isUsersFetching || isRolesFetching}
+      loading={
+        isUsersFetching ||
+        isRolesFetching ||
+        isAddRoleLoading ||
+        isDeleteRoleLoading
+      }
       scroll={{ y: "max-content" }}
       pagination={{
         current: page,

@@ -40,30 +40,43 @@ const AppHeader: FC = () => {
     </Menu>
   );
   return (
-    <Row align="middle" wrap={false} gutter={50}>
-      <Col>
-        <Logo></Logo>
-      </Col>
-      <Col xs={{ span: 0 }} md={{ span: 15 }}>
-        <div className={s.site}>
-          <div className={s.journalName}>Электронный журнал</div>
-          <h1 className={s.siteName}>
-            Ухтинский государственный технический университет
-          </h1>
-        </div>
-      </Col>
-      <Col xs={{ span: 0 }} md={{ span: 1 }}>
-        <div className={s.authorization}>
-          {user ? (
-            <Dropdown overlay={menu} trigger={["click"]}>
-              <span className={s.login}>{user.login}</span>
-            </Dropdown>
-          ) : (
-            <Link to={RouteName.Login}>Авторизуйтесь</Link>
-          )}
-        </div>
-      </Col>
-    </Row>
+    <Col
+      style={{ marginTop: 25 }}
+      xs={{ span: 24 }}
+      xxl={{ offset: 5, span: 14 }}
+    >
+      <Row align="middle" gutter={[24, 24]} justify="center">
+        <Col>
+          <Logo></Logo>
+        </Col>
+        <Col
+          xs={{ span: 0 }}
+          md={{ span: 14 }}
+          lg={{ span: 12 }}
+          xxl={{ span: 15 }}
+        >
+          <div className={s.site}>
+            <div>
+              <span className={s.journalName}>Электронный журнал</span>
+              <h1 className={s.siteName}>
+                Ухтинский государственный технический университет
+              </h1>
+            </div>
+          </div>
+        </Col>
+        <Col>
+          <div className={s.authorization}>
+            {user ? (
+              <Dropdown overlay={menu} trigger={["click"]}>
+                <span className={s.login}>{user.login}</span>
+              </Dropdown>
+            ) : (
+              <Link to={RouteName.Login}>Авторизуйтесь</Link>
+            )}
+          </div>
+        </Col>
+      </Row>
+    </Col>
   );
 };
 

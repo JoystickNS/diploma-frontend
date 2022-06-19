@@ -4,6 +4,7 @@ import { IAttestation } from "../../../../models/IAttestation";
 export interface JournalTableAttestationProps {
   attestation: IAttestation;
   journalId: number;
+  journalOwnerId: number;
   form: FormInstance<any>;
   isAttestationEditing: boolean;
   editingDataIndex: string;

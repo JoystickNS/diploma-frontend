@@ -17,15 +17,17 @@ body {
 
 .header {
   height: 200px;
+  width: 100%;
   background: inherit;
   line-height: normal;
   display: flex;
 }
 
 .content {
+  padding-top: 12px;
   width: 100%;
   height: 100%;
-  overflow: auto;
+  margin-bottom: 25px;
 }
 
 .login-container {

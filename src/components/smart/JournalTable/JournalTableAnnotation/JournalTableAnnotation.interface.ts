@@ -6,6 +6,7 @@ export interface JournalTableAnnotationProps {
   annotation: IAnnotation;
   lesson: ILesson;
   journalId: number;
+  journalOwnerId: number;
   form: FormInstance<any>;
   isAnnotationEditing: boolean;
   editingDataIndex: string;

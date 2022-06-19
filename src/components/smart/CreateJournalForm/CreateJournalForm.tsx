@@ -15,30 +15,30 @@ import {
 } from "antd";
 import { useForm } from "antd/lib/form/Form";
 import React, { FC, useEffect, useState } from "react";
-import AddItemButton from "../../../../../components/simple/AddItemButton/AddItemButton";
-import { useGetControlsQuery } from "../../../../../services/control/control.service";
-import { useGetDisciplinesQuery } from "../../../../../services/disciplines/disciplines.service";
-import { useGetWorkTypesQuery } from "../../../../../services/work-types/work-types.service";
-import { rules } from "../../../../../utils/rules";
-import { Rule } from "antd/lib/form";
-import LessonTopicTable from "../../../../../components/smart/LessonTopicTable/LessonTopicTable";
-import {
-  EditableLessonTopicCellProps,
-  ILessonTopicTable,
-} from "../../../../../components/smart/LessonTopicTable/LessonTopicTable.interface";
-import EditButton from "../../../../../components/simple/EditButton/EditButton";
-import DeleteButton from "../../../../../components/simple/DeleteButton/DeleteButton";
-import { useGetGroupsQuery } from "../../../../../services/groups/groups.service";
-import {
-  journalsAPI,
-  useCreateJournalMutation,
-} from "../../../../../services/journals/journals.service";
-import { useAppDispatch } from "../../../../../hooks/redux";
-import { useNavigate } from "react-router-dom";
-import { RouteName } from "../../../../../constants/routes";
-import { IJournalList } from "../../../../../models/IJournalList";
 import { IAttestationTable } from "./CreateJournalForm.interface";
 import moment from "moment";
+import { Rule } from "antd/lib/form";
+import { useNavigate } from "react-router-dom";
+import { RouteName } from "../../../constants/routes";
+import { useAppDispatch } from "../../../hooks/redux";
+import { useGetControlsQuery } from "../../../services/control/control.service";
+import { useGetDisciplinesQuery } from "../../../services/disciplines/disciplines.service";
+import { useGetGroupsQuery } from "../../../services/groups/groups.service";
+import {
+  useCreateJournalMutation,
+  journalsAPI,
+  useLazyGetAllJournalsListQuery,
+} from "../../../services/journals/journals.service";
+import { useGetWorkTypesQuery } from "../../../services/work-types/work-types.service";
+import { rules } from "../../../utils/rules";
+import AddItemButton from "../../simple/AddItemButton/AddItemButton";
+import DeleteButton from "../../simple/DeleteButton/DeleteButton";
+import EditButton from "../../simple/EditButton/EditButton";
+import LessonTopicTable from "../LessonTopicTable/LessonTopicTable";
+import {
+  ILessonTopicTable,
+  EditableLessonTopicCellProps,
+} from "../LessonTopicTable/LessonTopicTable.interface";
 
 const { Option } = Select;
 
@@ -46,7 +46,8 @@ const CreateJournalForm: FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  const { data: groupsData, isLoading: isGroupsLoading } = useGetGroupsQuery();
+  const { data: groupsData = [], isLoading: isGroupsLoading } =
+    useGetGroupsQuery();
   const { data: disciplinesData, isLoading: isDisciplinesLoading } =
     useGetDisciplinesQuery();
   const { data: controlsData, isLoading: isControlsLoading } =
@@ -70,7 +71,8 @@ const CreateJournalForm: FC = () => {
     ILessonTopicTable[]
   >([]);
   const [editingKey, setEditingKey] = useState<number>(0);
-  const [journalsListData, setJournalsListData] = useState<IJournalList[]>();
+  // const [journalsListData, setJournalsListData] = useState<IJournalList[]>();
+  const [getAllJournalsAPI, allJournalsData] = useLazyGetAllJournalsListQuery();
   const [isFormDataFetching, setIsFormDataFetching] = useState<boolean>(false);
 
   const [mainForm] = useForm();
@@ -150,17 +152,18 @@ const CreateJournalForm: FC = () => {
     setEditingKey(0);
   };
 
-  const handleDisciplineChange = async (value: string) => {
+  const handleDisciplineChange = async (value: number) => {
     setIsFormDataFetching(true);
-    setJournalsListData(
-      (
-        await dispatch(
-          journalsAPI.endpoints.getJournalsUmksList.initiate({
-            disciplineId: value,
-          })
-        )
-      ).data
-    );
+    // setJournalsListData(
+    //   (
+    //     await dispatch(
+    //       journalsAPI.endpoints.getAllJournalsList.initiate({
+    //         disciplineId: value,
+    //       })
+    //     )
+    //   ).data
+    // );
+    getAllJournalsAPI({ disciplineId: value });
     setIsFormDataFetching(false);
   };
 
@@ -216,7 +219,7 @@ const CreateJournalForm: FC = () => {
   };
 
   const onFinish = async (values: any) => {
-    const group = groupsData?.find((group) => group.id === values.groupId);
+    const group = groupsData.find((group) => group.id === values.groupId);
     const semesterName = values.semester;
     const currentDate = moment();
     const dateFormat = "DD.MM.YYYY";
@@ -431,7 +434,7 @@ const CreateJournalForm: FC = () => {
                 loading={isGroupsLoading}
                 optionFilterProp="label"
               >
-                {groupsData?.map((group) => (
+                {groupsData.map((group) => (
                   <Option key={group.id} value={group.id} label={group.name}>
                     {group.name}
                   </Option>
@@ -462,31 +465,32 @@ const CreateJournalForm: FC = () => {
               </Select>
             </Form.Item>
 
-            {journalsListData && journalsListData.length > 0 && (
-              <Form.Item>
-                <Select
-                  showSearch
-                  placeholder="Выбрать данные из существующего журнала"
-                  loading={isDisciplinesLoading}
-                  onSelect={(value: string) => handleJournalUmkChange(value)}
-                  optionFilterProp="label"
-                >
-                  {journalsListData?.map((journalUmk) => {
-                    const name = `${journalUmk.user.lastName} ${journalUmk.user.firstName[0]}. ${journalUmk.user.middleName[0]}`;
-                    const value = `${name} - ${journalUmk.group} - семестр: ${journalUmk.semester}`;
-                    return (
-                      <Option
-                        key={journalUmk.id}
-                        value={journalUmk.id}
-                        label={`${value}`}
-                      >
-                        {value}
-                      </Option>
-                    );
-                  })}
-                </Select>
-              </Form.Item>
-            )}
+            {allJournalsData.currentData &&
+              allJournalsData.currentData?.items.length > 0 && (
+                <Form.Item>
+                  <Select
+                    showSearch
+                    placeholder="Выбрать данные из существующего журнала"
+                    loading={isDisciplinesLoading}
+                    onSelect={(value: string) => handleJournalUmkChange(value)}
+                    optionFilterProp="label"
+                  >
+                    {allJournalsData.currentData?.items.map((journal) => {
+                      const name = `${journal.user.lastName} ${journal.user.firstName[0]}. ${journal.user.middleName[0]}`;
+                      const value = `${name} - ${journal.group} - семестр: ${journal.semester}`;
+                      return (
+                        <Option
+                          key={journal.id}
+                          value={journal.id}
+                          label={`${value}`}
+                        >
+                          {value}
+                        </Option>
+                      );
+                    })}
+                  </Select>
+                </Form.Item>
+              )}
 
             <Form.Item
               name="controlId"

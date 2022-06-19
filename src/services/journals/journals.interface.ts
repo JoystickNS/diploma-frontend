@@ -1,5 +1,6 @@
 import { IAttestation } from "../../models/IAttestation";
 import { ILessonTopic } from "../../models/ILessonTopic";
+import { IQueryArg } from "../api.interface";
 
 export interface ICreateJournalArgs {
   discipline: string;
@@ -29,6 +30,7 @@ export interface IUpdateJournalArgs {
   pointsForFive?: number;
 }
 
-export interface IGetJournalListArgs {
-  disciplineId?: string;
+export interface IGetJournalListArgs extends IQueryArg {
+  disciplineId?: number;
+  groupId?: number;
 }

@@ -570,7 +570,7 @@ const calcLessons = (
   } else {
     lessonDaysSorted = lessonDays;
   }
-  debugger;
+
   const lessonsDates = calcLessonsDates(lessonDaysSorted, lessonsCount, date);
 
   const lessonTypeId =

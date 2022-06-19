@@ -5,7 +5,7 @@ import logo from "../../../assets/images/logo.png";
 const Logo: FC = () => {
   return (
     <Link to="/">
-      <img src={logo} alt="Логотип" />;
+      <img src={logo} alt="Логотип" />
     </Link>
   );
 };

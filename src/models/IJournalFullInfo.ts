@@ -31,4 +31,5 @@ export interface IJournalFullInfo {
   points: IPoint[];
   visits: IVisit[];
   user: Omit<IUser, "login">;
+  userId: number;
 }

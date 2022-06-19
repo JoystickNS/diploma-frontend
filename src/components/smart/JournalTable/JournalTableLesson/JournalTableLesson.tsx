@@ -2,6 +2,7 @@ import { message, Row, Space, Tag } from "antd";
 import moment from "moment";
 import { FC, memo, useCallback, useEffect } from "react";
 import { LECTURE, PRACTICE } from "../../../../constants/lessons";
+import { ActionName, SubjectName } from "../../../../constants/permissions";
 import { useAppDispatch } from "../../../../hooks/redux";
 import {
   useDeleteLessonMutation,
@@ -11,7 +12,9 @@ import {
   deleteLessonAction,
   startLessonAction,
 } from "../../../../store/slices/journal/journal.slice";
+import { s } from "../../../../utils/abilities";
 import AddItemButton from "../../../simple/AddItemButton/AddItemButton";
+import Can from "../../../simple/Can/Can";
 import DeleteButton from "../../../simple/DeleteButton/DeleteButton";
 import EditButton from "../../../simple/EditButton/EditButton";
 import StartButton from "../../../simple/StartButton/StartButton";
@@ -19,6 +22,7 @@ import { JournalTableLessonProps } from "./JournalTableLesson.interface";
 
 const JournalTableLesson: FC<JournalTableLessonProps> = ({
   journalId,
+  journalOwnerId,
   lesson,
   subgroupsCount,
   annotationForm,
@@ -131,7 +135,7 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
         color: date.isSame(today, "date") ? "green" : undefined,
       }}
     >
-      <Space>
+      <Space size="small">
         {`${date.format("DD.MM.YYYY")} (${
           dayName[0].toUpperCase() + dayName.slice(1)
         })`}
@@ -150,30 +154,62 @@ const JournalTableLesson: FC<JournalTableLessonProps> = ({
             lesson.subgroups.length === 1 &&
             ` ${lesson.subgroups[0].subgroupNumber.value} пдгр.`}
         </Tag>
-        <EditButton
-          disabled={!!editingDataIndex}
-          tooltipText="Редактировать занятие"
-          onClick={handleEditLesson}
-        />
-        <DeleteButton
-          tooltipText="Удалить занятие"
-          disabled={!!editingDataIndex}
-          onConfirm={handleDeleteLesson}
-        />
-        {!lesson.conducted ? (
-          <StartButton
-            disabled={!!editingDataIndex}
-            buttonSize={18}
-            tooltipText="Начать занятие"
-            onClick={handleStartLesson}
-          />
-        ) : undefined}
+
+        <Can
+          I={ActionName.Update}
+          this={s(SubjectName.Journal, { userId: journalOwnerId })}
+        >
+          {() => (
+            <EditButton
+              disabled={!!editingDataIndex}
+              tooltipText="Редактировать занятие"
+              onClick={handleEditLesson}
+            />
+          )}
+        </Can>
+
+        <Can
+          I={ActionName.Delete}
+          this={s(SubjectName.Journal, { userId: journalOwnerId })}
+        >
+          {() => (
+            <DeleteButton
+              tooltipText="Удалить занятие"
+              disabled={!!editingDataIndex}
+              onConfirm={handleDeleteLesson}
+            />
+          )}
+        </Can>
+
+        <Can
+          I={ActionName.Delete}
+          this={s(SubjectName.Journal, { userId: journalOwnerId })}
+        >
+          {() =>
+            !lesson.conducted ? (
+              <StartButton
+                disabled={!!editingDataIndex}
+                buttonSize={18}
+                tooltipText="Начать занятие"
+                onClick={handleStartLesson}
+              />
+            ) : undefined
+          }
+        </Can>
       </Space>
-      <AddItemButton
-        disabled={!!editingDataIndex}
-        tooltipText="Добавить колонку для баллов на эту дату"
-        onClick={handleAddAnnotation}
-      />
+
+      <Can
+        I={ActionName.Create}
+        this={s(SubjectName.Journal, { userId: journalOwnerId })}
+      >
+        {() => (
+          <AddItemButton
+            disabled={!!editingDataIndex}
+            tooltipText="Добавить колонку для баллов на эту дату"
+            onClick={handleAddAnnotation}
+          />
+        )}
+      </Can>
     </Row>
   );
 };

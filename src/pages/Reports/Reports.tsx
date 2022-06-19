@@ -172,10 +172,10 @@ const Reports: FC = () => {
       fixed: "left",
       align: "center",
       width:
-        window.screen.availWidth < 350
+        window.screen.availWidth <= 500
           ? "100px"
-          : window.screen.availWidth > 350 && window.screen.availWidth < 500
-          ? "200px"
+          : window.screen.availWidth > 500 && window.screen.availWidth < 992
+          ? "150px"
           : "300px",
       sorter: (a: any, b: any) => (a.studentName > b.studentName ? 1 : -1),
       render: (text: string) => <div style={{ textAlign: "left" }}>{text}</div>,
@@ -229,7 +229,7 @@ const Reports: FC = () => {
           </h2>
         </Col>
 
-        <Col xs={{ span: 24 }} md={{ span: 12 }} lg={{ span: 8 }}>
+        <Col xs={{ span: 24 }} md={{ span: 12 }} lg={{ span: 10 }}>
           <Form layout="vertical" onFinish={onFinish}>
             <Form.Item
               name="groupId"

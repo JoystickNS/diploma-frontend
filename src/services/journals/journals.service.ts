@@ -8,6 +8,7 @@ import {
 } from "./journals.interface";
 import { IJournalUmkInfo } from "../../models/IJournalUmkInfo";
 import { IDelete } from "../../models/IDelete";
+import { IArrayResult } from "../../models/ArrayResult";
 
 export const journalsAPI = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -20,7 +21,10 @@ export const journalsAPI = api.injectEndpoints({
       invalidatesTags: ["Journals"],
     }),
 
-    getJournalsList: builder.query<IJournalList[], IGetJournalListArgs>({
+    getAllJournalsList: builder.query<
+      IArrayResult<IJournalList>,
+      IGetJournalListArgs
+    >({
       query: (queryArgs) => ({
         url: "journals",
         params: queryArgs,
@@ -28,20 +32,24 @@ export const journalsAPI = api.injectEndpoints({
       providesTags: ["Journals"],
     }),
 
-    getMyJournalsList: builder.query<IJournalList[], void>({
-      query: () => ({
+    getMyJournalsList: builder.query<
+      IArrayResult<IJournalList>,
+      IGetJournalListArgs
+    >({
+      query: (queryArgs) => ({
         url: "journals/my",
-      }),
-      providesTags: ["Journals"],
-    }),
-
-    getJournalsUmksList: builder.query<IJournalList[], IGetJournalListArgs>({
-      query: (queryArgs) => ({
-        url: "journals",
         params: queryArgs,
       }),
       providesTags: ["Journals"],
     }),
+
+    // getJournalsUmksList: builder.query<IJournalList[], IGetJournalListArgs>({
+    //   query: (queryArgs) => ({
+    //     url: "journals/umks",
+    //     params: queryArgs,
+    //   }),
+    //   providesTags: ["Journals"],
+    // }),
 
     getJournalUmkInfo: builder.query<IJournalUmkInfo, number>({
       query: (journalId) => ({
@@ -77,11 +85,11 @@ export const journalsAPI = api.injectEndpoints({
 
 export const {
   useCreateJournalMutation,
-  useGetJournalsListQuery,
+  useGetAllJournalsListQuery,
+  useLazyGetAllJournalsListQuery,
   useGetMyJournalsListQuery,
   useGetJournalUmkInfoQuery,
   useGetJournalFullInfoQuery,
-  useGetJournalsUmksListQuery,
   useUpdateJournalMutation,
   useDeleteJournalMutation,
 } = journalsAPI;

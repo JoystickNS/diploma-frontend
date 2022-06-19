@@ -17,10 +17,10 @@ import Reports from "./pages/Reports/Reports";
 import { authAPI } from "./services/auth/auth.service";
 import { initializeAction } from "./store/slices/app/app.slice";
 import { loginAction } from "./store/slices/auth/auth.slice";
-import Journal from "./pages/Journals/Journal/Journal";
-import CreateJournal from "./pages/Journals/Journal/CreateJournal/CreateJournal";
 import "moment/locale/ru";
 import moment from "moment";
+import CreateJournalForm from "./components/smart/CreateJournalForm/CreateJournalForm";
+import Journal from "./pages/Journals/Journal/Journal";
 
 const App: FC = () => {
   const isAppInitialized = useAppSelector((state) => state.app.isInitialized);
@@ -97,7 +97,7 @@ const App: FC = () => {
           />
           <Route
             path={`${RouteName.Journals}/create`}
-            element={<CreateJournal />}
+            element={<CreateJournalForm />}
           />
         </Route>
         {/* END Journals */}

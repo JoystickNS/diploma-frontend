@@ -2,6 +2,7 @@ import { Alert, Button, Checkbox, Form, Input, Row } from "antd";
 import { InputStatus } from "antd/lib/_util/statusUtils";
 import { FC, useEffect, useState } from "react";
 import { Location, useLocation, useNavigate } from "react-router-dom";
+import { RouteName } from "../../../../constants/routes";
 import { useAppDispatch } from "../../../../hooks/redux";
 import { IAuthArgs } from "../../../../services/auth/auth.interface";
 import { useLoginMutation } from "../../../../services/auth/auth.service";
@@ -33,14 +34,15 @@ const AuthForm: FC<IAuthFormProps> = ({
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation() as LocationProps;
-  const from = location.state?.from.pathname || "/";
+  // const from = location.state?.from.pathname || "/";
 
   const onFinish = async (values: IAuthArgs) => {
     const res = await loginAPI(values);
     if ("data" in res) {
       const data = res.data;
       dispatch(loginAction(data));
-      navigate(from, { replace: true });
+      // navigate(from, { replace: true });
+      navigate(RouteName.Main, { replace: true });
     }
   };
 

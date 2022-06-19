@@ -4,6 +4,8 @@ import { IPoint } from "../../../models/IPoint";
 import { ISubgroup } from "../../../models/ISubgroup";
 import { IVisit } from "../../../models/IVisit";
 
+export interface IJournalTable {}
+
 export interface EditableJournalHeaderCellProps {
   id: number;
   title: React.ReactNode;

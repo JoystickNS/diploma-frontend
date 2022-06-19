@@ -39,6 +39,7 @@ const initialState: IJournalState = {
   semester: 0,
   students: [],
   subgroups: [],
+  userId: 0,
   user: {} as Omit<IUser, "login">,
   visits: [],
   visitsInProgress: [],
@@ -313,6 +314,7 @@ export const journalSlice = createSlice({
       state.students = action.payload.students;
       state.subgroups = action.payload.subgroups;
       state.user = action.payload.user;
+      state.userId = action.payload.userId;
       state.visits = action.payload.visits;
     },
 

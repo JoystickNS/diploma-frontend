@@ -6,12 +6,7 @@ import s from "./ObjectCard.module.scss";
 
 const ObjectCard: FC<ObjectCardProps> = ({ name, to }) => {
   return (
-    <Col
-      xs={{ span: 24 }}
-      sm={{ span: 12 }}
-      lg={{ span: 8 }}
-      style={{ width: "100%" }}
-    >
+    <Col span={24} style={{ width: "100%" }}>
       <Link to={to}>
         <Card className={s.object}>{name}</Card>
       </Link>

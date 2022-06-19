@@ -1,8 +1,11 @@
 import { message, Space, Popover, Row } from "antd";
 import { FC, memo, useEffect } from "react";
+import { ActionName, SubjectName } from "../../../../constants/permissions";
 import { useAppDispatch } from "../../../../hooks/redux";
 import { useDeleteAnnotationMutation } from "../../../../services/annotations/annotations.service";
 import { deleteAnnotationAction } from "../../../../store/slices/journal/journal.slice";
+import { s } from "../../../../utils/abilities";
+import Can from "../../../simple/Can/Can";
 import DeleteButton from "../../../simple/DeleteButton/DeleteButton";
 import EditButton from "../../../simple/EditButton/EditButton";
 import OkButton from "../../../simple/OkButton/OkButton";
@@ -13,6 +16,7 @@ const JournalTableAnnotation: FC<JournalTableAnnotationProps> = ({
   lesson,
   form,
   journalId,
+  journalOwnerId,
   isAnnotationEditing,
   editingDataIndex,
   setIsAddAnnotationModalVisible,
@@ -68,11 +72,18 @@ const JournalTableAnnotation: FC<JournalTableAnnotationProps> = ({
         content={
           <Space>
             {annotation.name || "Пояснение отсутствует"}
-            <EditButton
-              disabled={!!editingDataIndex}
-              tooltipText="Редактировать пояснение"
-              onClick={handleEditAnnotation}
-            />
+            <Can
+              I={ActionName.Update}
+              this={s(SubjectName.Journal, { userId: journalOwnerId })}
+            >
+              {() => (
+                <EditButton
+                  disabled={!!editingDataIndex}
+                  tooltipText="Редактировать пояснение"
+                  onClick={handleEditAnnotation}
+                />
+              )}
+            </Can>
           </Space>
         }
       >
@@ -91,18 +102,32 @@ const JournalTableAnnotation: FC<JournalTableAnnotationProps> = ({
       {editingDataIndex !== `${annotation.id} points` ? (
         <Space size="small">
           {lesson.conducted && (
-            <EditButton
-              disabled={!!editingDataIndex}
-              tooltipText="Редактировать баллы"
-              onClick={handleEditPoints}
-            />
+            <Can
+              I={ActionName.Update}
+              this={s(SubjectName.Journal, { userId: journalOwnerId })}
+            >
+              {() => (
+                <EditButton
+                  disabled={!!editingDataIndex}
+                  tooltipText="Редактировать баллы"
+                  onClick={handleEditPoints}
+                />
+              )}
+            </Can>
           )}
 
-          <DeleteButton
-            tooltipText="Удалить столбец с баллами"
-            disabled={!!editingDataIndex}
-            onConfirm={handleDeleteAnnotation}
-          />
+          <Can
+            I={ActionName.Delete}
+            this={s(SubjectName.Journal, { userId: journalOwnerId })}
+          >
+            {() => (
+              <DeleteButton
+                tooltipText="Удалить столбец с баллами"
+                disabled={!!editingDataIndex}
+                onConfirm={handleDeleteAnnotation}
+              />
+            )}
+          </Can>
         </Space>
       ) : (
         <OkButton

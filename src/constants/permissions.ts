@@ -14,6 +14,5 @@ export enum ActionName {
 export enum SubjectName {
   Admin = "Admin",
   Journal = "Journal",
-  UMK = "UMK",
   Report = "Report",
 }
